@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""
+Copy the finished code of a step over your files.
+
+    ./solve 2a     one step
+    ./solve 2      a whole exercise (2a, then 2b)
+
+Your own version of each file is saved first, in .solve-backup/. A solution includes what the earlier steps in the
+same file did, so run the steps in order if you skip one.
+"""
+
+import shutil
+import sys
+from datetime import datetime
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+SOLUTIONS = ROOT / "solutions"
+
+
+def steps_for(name: str) -> list[str]:
+    """'2a' is one step. '2' is every step of exercise 2."""
+    available = sorted(path.name for path in SOLUTIONS.iterdir() if path.is_dir())
+    return [step for step in available if step == name or (name.isdigit() and step.rstrip("abcdefgh") == name)]
+
+
+def main() -> int:
+    available = sorted(path.name for path in SOLUTIONS.iterdir() if path.is_dir())
+    if len(sys.argv) != 2:
+        print(__doc__.strip())
+        print(f"\nSteps with a solution: {', '.join(available)}")
+        return 1
+
+    steps = steps_for(sys.argv[1])
+    if not steps:
+        print(f"There is no solution for '{sys.argv[1]}'. Steps with a solution: {', '.join(available)}")
+        return 1
+
+    backup = ROOT / ".solve-backup" / datetime.now().strftime("%Y%m%d-%H%M%S")
+    for step in steps:
+        for solution in sorted((SOLUTIONS / step).rglob("*")):
+            if not solution.is_file():
+                continue
+            relative = solution.relative_to(SOLUTIONS / step)
+            target = ROOT / relative
+            if target.exists() and target.read_text() == solution.read_text():
+                print(f"{step}: {relative} already has the solution")
+                continue
+            if target.exists():
+                (backup / relative).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(target, backup / relative)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(solution, target)
+            print(f"{step}: {relative}")
+    if backup.exists():
+        print(f"\nYour own versions are saved in {backup.relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

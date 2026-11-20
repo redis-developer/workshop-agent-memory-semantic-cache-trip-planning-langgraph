@@ -3,10 +3,8 @@
 #
 # One function for each step. `graph.py` says how they connect.
 #
-# **Exercise 5 (solved)** is `retrieve_memories`, and adding it to the graph in `graph.py`.
-#
-# This file is written as a notebook-style script: the `# %%` lines split it into cells. In VS Code, click
-# **Run Cell** above a cell to run just that part. The server only sees what you save.
+# **Exercise 5** is `retrieve_memories`, and adding it to the graph in `graph.py`.
+
 
 # %%
 from datetime import datetime, timezone
@@ -25,11 +23,14 @@ tools = [*memory_tools]
 
 
 def last_human_message(state: AgentState) -> str:
+    """What the traveler said last."""
     return next((message.text for message in reversed(state["messages"]) if message.type == "human"), "")
 
 
 # %% [markdown]
-# ## Exercise 5 (solved): retrieve memories before the agent runs
+# ## Exercise 5: retrieve memories before the agent runs
+#
+# **What to do:** write the step that looks up what we know about the traveler, and (in `graph.py`) run it before the agent.
 #
 # Try it: log in as ashwin and say "hey". The agent already knows his trips.
 
@@ -39,23 +40,54 @@ async def retrieve_memories(state: AgentState, config: RunnableConfig):
     """
     Before the agent runs, look up what we already know about this traveler, using what they just said.
     They are then in the prompt from the start, so the agent does not have to ask for them.
+
+    A greeting such as "hello" matches nothing, so it also looks for what they did before (their episodic memories).
+    The same memory can match both searches, so each one is kept once. A memory outage must not stop the turn:
+    it carries on without memories.
     """
     question = last_human_message(state)
     log(f'{config["metadata"]["langgraph_node"]}: looking up "{question[:50]}"')
-    # A memory outage must not stop the turn: carry on without memories.
-    try:
-        found = await search_long_term_memory(user_id=state["user_id"], query=question)
-        # A greeting such as "hello" matches nothing, so also look for what they did before
-        found += await search_long_term_memory(user_id=state["user_id"], query="trips and places the traveler has been to", memory_type="episodic")
-    except Exception:
-        found = []
-    memories = list({memory["id"]: memory for memory in found}.values())  # the same memory can match both searches
-    return {"long_term_memories": [{"id": memory["id"], "text": memory["text"]} for memory in memories]}
+    # TODO (Exercise 5): search this traveler's long-term memories for `question`, with `search_long_term_memory(user_id=..., query=...)`.
+    # Return {"long_term_memories": [{"id": ..., "text": ...}, ...]}.
+    # Until you write this, the agent starts without any memories. Replace the line below when you have.
+    return {"long_term_memories": []}
+
+
+# %% [markdown]
+# <details>
+# <summary>Show solution</summary>
+#
+# ```python
+# async def retrieve_memories(state: AgentState, config: RunnableConfig):
+#     """
+#     Before the agent runs, look up what we already know about this traveler, using what they just said.
+#     They are then in the prompt from the start, so the agent does not have to ask for them.
+#
+#     A greeting such as "hello" matches nothing, so it also looks for what they did before (their episodic memories).
+#     The same memory can match both searches, so each one is kept once. A memory outage must not stop the turn:
+#     it carries on without memories.
+#     """
+#     question = last_human_message(state)
+#     log(f'{config["metadata"]["langgraph_node"]}: looking up "{question[:50]}"')
+#     try:
+#         found = await search_long_term_memory(user_id=state["user_id"], query=question)
+#         found += await search_long_term_memory(user_id=state["user_id"], query="trips and places the traveler has been to", memory_type="episodic")
+#     except Exception:
+#         found = []
+#     memories = list({memory["id"]: memory for memory in found}.values())
+#     return {"long_term_memories": [{"id": memory["id"], "text": memory["text"]} for memory in memories]}
+# ```
+#
+# </details>
 
 
 # %%
 async def agent(state: AgentState, config: RunnableConfig):
-    """One model call. The model answers, or asks for tools."""
+    """
+    One model call. The system prompt holds today's date, what we remember about the traveler (put there by
+    `retrieve_memories`) and the summary of the earlier conversation. The model answers, or asks for tools: if its reply
+    asks for tools, the graph runs them and comes back here.
+    """
     today = datetime.now(timezone.utc).date().isoformat()
 
     memory_lines = "\n".join(f"- {memory['text']}" for memory in state["long_term_memories"]) or "Nothing yet: this is a new traveler."
@@ -75,5 +107,4 @@ Example, about another traveler. They are remembered as: "Visited Madrid in Febr
     log(f'{config["metadata"]["langgraph_node"]}: {len(state["messages"])} messages, {len(state["long_term_memories"])} memories in the prompt')
     response = await get_chat_model().bind_tools(tools).ainvoke([SystemMessage(system_prompt), *state["messages"]])
 
-    # If the reply asks for tools, the graph runs them and comes back here.
     return {"messages": [response]}

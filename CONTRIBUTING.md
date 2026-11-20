@@ -36,7 +36,9 @@ Each feature is a folder in `backend/modules/` with up to three layers. `api/` h
 
 ### The exercise files
 
-The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. A part that a participant writes is marked in the text, and a part that is already written says "(solved)". When you change one, keep its explanation, the README exercise and the diagram saying the same thing.
+The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. The files in the repository are the **starter**: each step a participant writes is a stub with a `# TODO` and a hint, written so the app still runs without memory. Under each step is a collapsed "Show solution" block (`<details>`) with the finished code. Keep every existing comment when you turn code into a stub.
+
+The finished files are in `solutions/<step>/`, at the same path as in the repository, and `./solve` copies them over. Each one has its step solved and every earlier step in the same file, and its headings say "(solved)". When you change exercise code, update the stub, the "Show solution" block and the file in `solutions/` together, and keep the README exercise and the diagram saying the same thing.
 
 ### Seeding
 

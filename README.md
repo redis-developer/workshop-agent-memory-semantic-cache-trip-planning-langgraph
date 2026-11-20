@@ -163,7 +163,12 @@ Most exercises have two steps:
 - **Step A: the memory service.** Write the calls to Redis Agent Memory. You can try them on their own, and the result shows in the **Memory** tab.
 - **Step B: the agent.** Connect it to the agent, as a tool or as a step in the graph.
 
-Stuck? Each exercise gives a `./solve` command. It saves your version of the files, then copies the finished code over them. A solution includes what the earlier ones in the same file did, so run them in order if you skip one.
+Where to write: look for `# TODO` in the files. The hint above each one says what to do.
+
+Stuck? You have two ways to get the solution:
+
+- **Copy it from the file.** Under each step there is a collapsed **Show solution** block with the finished code. Open it and copy what you need. It shows when you open the file as a notebook in JupyterLab, or in VS Code's notebook view.
+- **Run `./solve`.** Each step gives a `./solve` command. It saves your version of the files in `.solve-backup/`, then copies the finished code over them. A solution includes what the earlier steps in the same file did, so run them in order if you skip one.
 
 #### Exercise 1: see what no memory looks like
 

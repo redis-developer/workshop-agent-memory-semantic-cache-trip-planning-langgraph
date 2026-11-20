@@ -28,3 +28,6 @@ htmlcov/
 
 # Logs
 *.log
+
+# Your own files, saved by ./solve before it copies a solution
+.solve-backup/

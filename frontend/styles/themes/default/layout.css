@@ -1,7 +1,7 @@
 .app {
     height: 100%;
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto 1fr auto;
 }
 .header {
     display: flex;
@@ -53,6 +53,20 @@
     color: var(--text-muted);
     font-size: 0.8125rem;
     font-weight: 500;
+}
+.footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem 1.5rem;
+    padding: 0.5rem 1.5rem;
+    background: var(--bg);
+    box-shadow: 0 -1px 0 var(--border);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+.footer p {
+    margin: 0;
 }
 .main {
     min-height: 0;
