@@ -1,0 +1,135 @@
+.canvas-welcome {
+    flex-direction: column;
+    margin: auto;
+    max-width: 34rem;
+}
+.canvas-welcome .canvas-welcome-label {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--primary-dark);
+}
+.canvas-welcome h2 {
+    font-size: 2.75rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin: 0.5rem 0 0.75rem;
+}
+.canvas-welcome p {
+    color: var(--text-muted);
+    font-size: 1.0625rem;
+}
+.sample-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    margin-top: 1.25rem;
+}
+.sample {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.sample:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+
+.canvas-results {
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.weather-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: fit-content;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.5rem;
+}
+.weather-card p {
+    margin: 0;
+}
+.weather-icon {
+    font-size: 2.25rem;
+}
+.weather-temp {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+.weather-condition {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+.weather-detail {
+    color: var(--text-soft);
+    font-size: 0.75rem;
+}
+
+.place-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 1rem;
+}
+.place-card {
+    display: flex;
+    gap: 0.875rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.place-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+}
+.place-badge {
+    flex: none;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--primary-light), #ffe1de);
+    color: var(--primary-dark);
+    border-radius: var(--radius-small);
+    font-weight: 700;
+    font-size: 1.0625rem;
+}
+.place-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+}
+.place-info p {
+    margin: 0;
+}
+.place-name {
+    margin: 0;
+    font-size: 1rem;
+}
+.place-rating {
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+.place-description {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}
+.place-source {
+    font-size: 0.8125rem;
+}

@@ -1,0 +1,102 @@
+:root {
+    --navy: #1f3a5f;
+    --primary: #ff4438;
+    --primary-dark: #c9261c;
+    --primary-light: #fff1f0;
+    --success: #1c866b;
+    --text: #1f3a5f;
+    --text-muted: #4a5963;
+    --text-soft: #6b7780;
+    --bg: #ffffff;
+    --bg-muted: #f1f4f8;
+    --border: #e3e7ea;
+    --border-strong: #c9d0d5;
+    --red: #c9261c;
+    --radius: 12px;
+    --radius-small: 8px;
+    --shadow: 0 2px 4px rgba(31, 58, 95, 0.04), 0 8px 24px rgba(31, 58, 95, 0.08);
+    --shadow-hover: 0 4px 8px rgba(31, 58, 95, 0.06), 0 14px 32px rgba(31, 58, 95, 0.14);
+    --font-sans: 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'Space Mono', 'SF Mono', Menlo, monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+body {
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--text);
+    background: linear-gradient(180deg, #f8fafc 0%, var(--bg-muted) 100%) fixed;
+}
+button,
+input,
+select {
+    font: inherit;
+    color: inherit;
+}
+button {
+    cursor: pointer;
+}
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+[hidden] {
+    display: none !important;
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+a {
+    color: var(--primary-dark);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Lists are used for the structure, not for bullets */
+ul,
+ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.subtitle {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-soft);
+}
+.secondary {
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    transition: border-color 0.2s, color 0.2s;
+}
+.secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary-dark);
+}
+.empty {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+}

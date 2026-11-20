@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workshop: Reuse Knowledge for Agentic AI</title>
+    <meta name="description" content="A hands-on workshop: build a dual memory architecture for a real-time trip-planning AI agent, with Redis Agent Memory, LangGraph and Google Maps." />
+    <meta name="keywords" content="Redis, Redis Agent Memory, AI agents, agent memory, long-term memory, working memory, LangGraph, LangChain, FastAPI, workshop" />
+    <meta name="author" content="Ashwin Hariharan" />
+    <link rel="icon" type="image/png" href="/icons/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="/styles/themes/default/theme.css" />
+    <link rel="stylesheet" href="/styles/themes/default/layout.css" />
+    <link rel="stylesheet" href="/styles/themes/default/canvas.css" />
+    <link rel="stylesheet" href="/styles/themes/default/chat.css" />
+    <link rel="stylesheet" href="/styles/themes/default/memory.css" />
+    <link rel="stylesheet" href="/styles/themes/default/login.css" />
+
+    <!-- Short names for the folders of the scripts -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@components/": "/modules/components/",
+            "@services/": "/modules/services/",
+            "@utils/": "/modules/utils/",
+            "marked": "/libraries/marked/marked.esm.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- The traveler's name. It stands in for a real login. -->
+    <section id="login" class="login" aria-label="Log in" hidden>
+        <form id="login-form" class="login-form">
+            <h1>Trip planner</h1>
+            <p class="subtitle">Workshop: Reuse Knowledge for Agentic AI</p>
+            <label for="login-name">Your name</label>
+            <input id="login-name" type="text" maxlength="40" autocomplete="off" autofocus />
+            <p id="login-error" class="login-error" role="alert" hidden></p>
+            <button type="submit">Log in</button>
+            <p class="login-hint">The agent remembers what you tell it, under your name. Try ashwin, bhavana or kyle to start with memories already there.</p>
+        </form>
+    </section>
+
+    <div id="app" class="app" hidden>
+        <header class="header">
+            <div class="header-title">
+                <img class="brand" src="/icons/favicon.png" alt="" width="32" height="32" />
+                <h1>Trip planner</h1>
+                <span class="subtitle">Workshop: Reuse Knowledge for Agentic AI</span>
+                <a class="exercise-map-link" href="/architecture.html" target="_blank" rel="noopener noreferrer">Exercise map ↗<span class="visually-hidden"> (opens in a new tab)</span></a>
+            </div>
+            <nav class="header-controls" aria-label="Traveler">
+                <span id="user-name" class="user-name"></span>
+                <button id="new-session" type="button" class="secondary">New session</button>
+                <button id="log-out" type="button" class="secondary">Log out</button>
+            </nav>
+        </header>
+
+        <div class="main">
+            <!-- One view at a time: the welcome text, or what the agent found. The script sets data-view. -->
+            <main class="canvas" id="canvas" data-view="welcome">
+                <section class="canvas-welcome" data-canvas-view="welcome" aria-label="Welcome">
+                    <p class="canvas-welcome-label" id="welcome-label">Welcome</p>
+                    <h2>Where are you going?</h2>
+                    <p>Ask for a trip, and tell the agent what you like. It remembers.</p>
+                    <ul class="sample-prompts">
+                        <li><button type="button" class="sample" data-text="Plan a trip">Plan a trip</button></li>
+                        <li><button type="button" class="sample" data-text="What's the weather like this week?">What's the weather like this week?</button></li>
+                        <li><button type="button" class="sample" data-text="Suggest a place for a staycation">Suggest a place for a staycation</button></li>
+                    </ul>
+                </section>
+
+                <section class="canvas-results" data-canvas-view="results" aria-label="What the agent found">
+                    <div id="weather" class="weather"></div>
+                    <ul id="places" class="place-grid" aria-label="Places"></ul>
+
+                    <!-- The weather the agent found -->
+                    <template id="weather-card-template">
+                        <article class="weather-card">
+                            <span class="weather-icon" aria-hidden="true"></span>
+                            <div>
+                                <p class="weather-temp"></p>
+                                <p class="weather-condition"></p>
+                                <p class="weather-detail weather-rain"></p>
+                                <p class="weather-detail weather-air" hidden></p>
+                                <p class="weather-detail weather-pollen" hidden></p>
+                                <a class="place-source" target="_blank" rel="noopener noreferrer" hidden></a>
+                            </div>
+                        </article>
+                    </template>
+
+                    <!-- A place the agent found -->
+                    <template id="place-card-template">
+                        <li class="place-card">
+                            <span class="place-badge" aria-hidden="true"></span>
+                            <div class="place-info">
+                                <h3 class="place-name"></h3>
+                                <p class="place-rating" hidden></p>
+                                <p class="place-description"></p>
+                                <a class="place-source" target="_blank" rel="noopener noreferrer" hidden></a>
+                            </div>
+                        </li>
+                    </template>
+                </section>
+            </main>
+
+            <aside class="sidebar" aria-label="Assistant">
+                <nav class="tabs" aria-label="Assistant views">
+                    <button type="button" id="chat-tab" class="tab active" aria-current="true" aria-controls="chat-panel">Chat</button>
+                    <button type="button" id="memory-tab" class="tab" aria-controls="memory-panel">Memory</button>
+                </nav>
+
+                <section id="chat-panel" class="chat-panel" aria-label="Chat">
+                    <ol id="messages" class="messages" aria-label="Conversation" aria-live="polite"></ol>
+
+                    <!-- A message the traveler sent -->
+                    <template id="user-message-template">
+                        <li class="message user">
+                            <p class="bubble"></p>
+                        </li>
+                    </template>
+
+                    <!-- A reply of the agent. An error is the same, with the class "error". -->
+                    <template id="agent-message-template">
+                        <li class="message agent">
+                            <p class="bubble"></p>
+                        </li>
+                    </template>
+
+                    <!-- What the agent did while it worked on the reply -->
+                    <template id="task-progress-template">
+                        <li class="steps">
+                            <ol class="step-list" aria-label="What the agent did"></ol>
+                        </li>
+                    </template>
+
+                    <template id="step-template">
+                        <li class="step">
+                            <span class="dot" aria-hidden="true"></span>
+                            <span class="step-label"></span>
+                            <time class="step-duration" hidden></time>
+                        </li>
+                    </template>
+
+                    <!-- Under a reply: how long it took and what it used -->
+                    <template id="response-info-template">
+                        <li class="reply-footer">
+                            <details class="response-info">
+                                <summary>
+                                    <span class="cached-badge" hidden>From the semantic cache</span>
+                                    <span class="response-time"></span>
+                                    <span class="token-total"></span>
+                                </summary>
+                                <p class="cached-message" hidden>This seems familiar, so an earlier reply was reused.</p>
+                                <p class="no-model-calls-message" hidden>No model calls were needed for this turn.</p>
+                                <ul class="usage" aria-label="Usage"></ul>
+                            </details>
+                        </li>
+                    </template>
+
+                    <template id="usage-row-template">
+                        <li><span class="usage-name"></span><span class="usage-value"></span></li>
+                    </template>
+
+                    <form id="chat-form" class="chat-form">
+                        <input id="chat-input" type="text" placeholder="Ask the trip planner…" aria-label="Message the trip planner" autocomplete="off" />
+                        <button type="submit" id="send">Send</button>
+                    </form>
+                </section>
+
+                <!-- What Redis Agent Memory holds, live -->
+                <section id="memory-panel" class="memory-panel" aria-label="Memory" hidden>
+                    <p id="memory-error" class="empty" role="alert" hidden></p>
+
+                    <div id="memory-content">
+                        <section class="memory-section">
+                            <h3>This turn</h3>
+                            <ul id="memory-turn" class="memory-list"></ul>
+                            <p class="empty">Nothing yet. Send a message.</p>
+
+                            <template id="turn-line-template">
+                                <li class="row mono"></li>
+                            </template>
+                        </section>
+
+                        <section class="memory-section">
+                            <h3>Session (this conversation)</h3>
+                            <p id="memory-session-count" class="row"></p>
+                            <p id="memory-summary" class="row" hidden></p>
+                            <p class="empty">No summary yet. The service writes one when the conversation gets long.</p>
+                        </section>
+
+                        <section class="memory-section">
+                            <h3 id="memory-entries-title">Long-term memory</h3>
+                            <ul id="memory-entries" class="memory-list"></ul>
+                            <p class="empty">Nothing yet. Tell the agent a preference and it will remember it.</p>
+
+                            <template id="memory-entry-template">
+                                <li class="row">
+                                    <p class="memory-text"></p>
+                                    <p class="memory-details"></p>
+                                </li>
+                            </template>
+                        </section>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    <script type="module" src="/modules/app.js"></script>
+</body>
+</html>

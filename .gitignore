@@ -1,0 +1,30 @@
+# Secrets: keep the example, ignore the real settings
+.env
+.env.*
+!.env.example
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.egg-info/
+build/
+dist/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Notebooks
+.ipynb_checkpoints
+.jupyter/
+
+# Editors and tools
+.claude/
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log

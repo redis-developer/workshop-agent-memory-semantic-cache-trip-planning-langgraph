@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How the workshop app fits together</title>
+    <link rel="icon" type="image/png" href="/icons/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" />
+
+    <style>
+        :root {
+            --navy: #1f3a5f;
+            --text: #4a5963;
+            --muted: #6b7780;
+            --soft: #8a949a;
+            --line: #c9d0d5;
+            --track: #eceff1;
+            --accent: #ff4438;
+            --accent-soft: #ff8a80;
+            --font-sans: 'Space Grotesk', system-ui, sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * { box-sizing: border-box; }
+        [hidden] { display: none; }
+        body { margin: 0; font-family: var(--font-sans); color: var(--navy); background: #ffffff; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+        /* The page: the title, the subtitle, the exercises, then the rest, each across the whole width */
+        .page { padding: 1.75rem 1.5rem 2.5rem; }
+        h1 { margin: 0; font-size: 2.375rem; font-weight: 700; letter-spacing: -0.01em; }
+        .subtitle { margin: 0.375rem 0 0; font-size: 1.1875rem; font-weight: 500; color: var(--text); }
+
+        nav.exercises { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.25rem; }
+        nav.exercises ol { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+        .stage {
+            font: 500 0.875rem var(--font-sans);
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #ffffff;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .stage:hover { border-color: var(--accent); color: var(--navy); }
+        .stage[aria-current='step'] { background: var(--navy); border-color: var(--navy); color: #ffffff; }
+        .stage.done:not([aria-current='step']) { border-color: var(--accent); color: var(--accent); }
+        .solve-next {
+            font: 700 0.875rem var(--font-sans);
+            padding: 0.5rem 1.125rem;
+            border: none;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #ffffff;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+        .solve-next:disabled { background: var(--line); cursor: default; }
+
+        /* The two round buttons at the sides of the screen */
+        .previous-exercise, .next-exercise {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3.25rem;
+            height: 3.25rem;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            background: #ffffff;
+            color: var(--navy);
+            font: 400 1.875rem/1 var(--font-sans);
+            box-shadow: 0 6px 18px rgba(31, 58, 95, 0.16);
+            cursor: pointer;
+            z-index: 10;
+            transition: border-color 0.2s, opacity 0.2s;
+        }
+        .previous-exercise { left: 0.875rem; }
+        .next-exercise { right: 0.875rem; }
+        .previous-exercise:hover:not(:disabled), .next-exercise:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .previous-exercise:disabled, .next-exercise:disabled { opacity: 0.3; cursor: default; }
+
+        progress { appearance: none; width: 100%; height: 0.375rem; margin: 1.375rem 0 0.5rem; border: none; border-radius: 3px; background: var(--track); overflow: hidden; }
+        progress::-webkit-progress-bar { background: var(--track); }
+        progress::-webkit-progress-value { background: linear-gradient(90deg, var(--accent-soft), var(--accent)); transition: width 0.5s ease; }
+        progress::-moz-progress-bar { background: linear-gradient(90deg, var(--accent-soft), var(--accent)); }
+
+        .exercise-info { min-height: 4.5rem; margin: 0.875rem 0 0.25rem; }
+        .exercise-info h2 { margin: 0 0 0.375rem; font-size: 1.25rem; }
+        .exercise-info p { margin: 0; color: var(--text); line-height: 1.5; }
+
+        figure { margin: 0; position: relative; }
+        /* The legend sits over the empty top-left corner of the diagram */
+        .legend { position: absolute; top: 0.75rem; left: 1.25rem; }
+        .legend-title { margin: 0 0 0.5rem; font: 700 0.6875rem var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+        .legend ul { display: grid; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+        .legend li { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8438rem; color: var(--text); }
+        .swatch { width: 1.875rem; height: 1.125rem; border: 1.5px solid var(--box-line); border-radius: 4px; background: var(--box); }
+        .swatch.exercise { border: 2px solid var(--accent); background: #ffffff; }
+        .swatch.not-built { border-style: dashed; }
+        svg { width: 100%; height: auto; display: block; }
+
+        .tooltip {
+            position: fixed;
+            z-index: 20;
+            max-width: 20rem;
+            padding: 0.75rem 0.875rem;
+            background: #ffffff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(31, 58, 95, 0.18);
+            font-size: 0.8438rem;
+            line-height: 1.45;
+            color: var(--text);
+            pointer-events: none;
+        }
+        .tooltip strong { display: block; margin-bottom: 0.1875rem; font-size: 0.875rem; color: var(--navy); }
+    </style>
+
+    <!-- The styles of the diagram. Plain classes, so the same rules work when the SVG is opened on its own. -->
+    <style id="diagram-css">
+        :root {
+            --box: #f3f4f5;
+            --box-line: #8d99a0;
+            --chip-line: #a9b3b9;
+            --edge: #7d8a93;
+            --edge-not-built: #a7afb4;
+            --arrowhead: #5f6d76;
+            --graph: #c58bdc;
+            --graph-label: #9a74b0;
+            --ink: #0b1b2b;
+        }
+        [hidden] { display: none; }
+
+        .box { fill: var(--box); stroke: var(--box-line); stroke-width: 1.5; }
+        .box.external { fill: #ffffff; }
+        .exercise .box { fill: #ffffff; stroke: var(--accent); stroke-width: 2; }
+        .chip .box { fill: #ffffff; stroke: var(--chip-line); stroke-width: 1.3; }
+        .exercise.chip .box { stroke: var(--accent); }
+        .frame { fill: none; stroke: var(--graph); stroke-width: 2; stroke-dasharray: 7 6; }
+
+        .title { font-family: var(--font-sans); font-weight: 700; font-size: 16px; fill: var(--navy); text-anchor: middle; }
+        .title.left { text-anchor: start; }
+        .title.tiny { font-size: 11px; }
+        .title.group { font-size: 12.5px; }
+        .title.step { font-size: 14px; }
+        .title.card { font-size: 15px; }
+        .title.heading { font-size: 17px; }
+        .title.brand { font-size: 20px; }
+        .sub { font-family: var(--font-mono); font-size: 10.5px; fill: var(--muted); text-anchor: middle; }
+        .sub.left { text-anchor: start; }
+        .file { font-family: var(--font-mono); font-size: 9.5px; fill: var(--soft); text-anchor: middle; }
+        .file.left { text-anchor: start; }
+        .file.right { text-anchor: end; }
+        .code { font-family: var(--font-mono); font-size: 11.5px; fill: var(--navy); text-anchor: middle; font-weight: 700; }
+        .label { font-family: var(--font-mono); font-size: 10.5px; fill: var(--muted); }
+        .label.small { font-size: 10px; }
+        .frame-label { font-family: var(--font-mono); font-size: 13px; fill: var(--graph-label); text-anchor: end; }
+        .badge { fill: var(--ink); }
+        .badge-n { font-family: var(--font-sans); font-weight: 700; font-size: 12px; fill: #ffffff; text-anchor: middle; }
+        .icon { fill: none; stroke: var(--navy); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .icon.accent { stroke: var(--accent); }
+        .icon.solid { fill: var(--navy); stroke: none; }
+        .icon.accent-fill { fill: var(--accent); stroke: none; }
+        .arrowhead { fill: var(--arrowhead); }
+        .arrowhead.exercise-edge { fill: var(--accent); }
+
+        .edge path { fill: none; stroke: var(--edge); stroke-width: 1.7; }
+        .edge.exercise-edge path { stroke: var(--accent); }
+        .edge.flow path { stroke-dasharray: 6 5; animation: dash 1.1s linear infinite; }
+
+        /* Greyed out: the piece is not built yet */
+        .not-built { opacity: 0.38; }
+        .not-built .box { fill: var(--box); stroke: var(--edge-not-built); stroke-dasharray: 5 4; }
+        .not-built .icon.accent { stroke: var(--soft); }
+        .not-built .icon.accent-fill { fill: var(--soft); }
+        .edge.not-built path { stroke: var(--edge-not-built); stroke-dasharray: 2 6; animation: none; stroke-width: 1.5; }
+
+        /* Lit up for the first time */
+        .pulse { animation: glow 1.4s ease-out 1; }
+        @keyframes glow {
+            0% { opacity: 0.38; filter: drop-shadow(0 0 0 rgba(255, 68, 56, 0)); }
+            35% { opacity: 1; filter: drop-shadow(0 0 14px rgba(255, 68, 56, 0.85)); }
+            100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(255, 68, 56, 0)); }
+        }
+        @keyframes dash { to { stroke-dashoffset: -11; } }
+
+        .node, .edge { transition: opacity 0.5s ease; }
+        [data-info] { cursor: default; }
+        [data-info]:hover .box, [data-info]:focus-visible .box { stroke-width: 2.6; }
+        [data-info]:focus-visible { outline: 2px solid var(--navy); outline-offset: 3px; }
+        @media (prefers-reduced-motion: reduce) {
+            .edge.flow path, .pulse { animation: none; }
+        }
+    </style>
+</head>
+<body>
+<main class="page">
+    <header>
+        <h1>Workshop: Reuse Knowledge for Agentic AI</h1>
+        <p class="subtitle">with Agent Memory and Semantic Caching</p>
+    </header>
+
+    <nav class="exercises" aria-label="Exercises">
+        <ol>
+            <li><button class="stage" data-stage="1" type="button">Exercise 1</button></li>
+            <li><button class="stage" data-stage="2" type="button">Exercise 2</button></li>
+            <li><button class="stage" data-stage="3" type="button">Exercise 3</button></li>
+            <li><button class="stage" data-stage="4" type="button">Exercise 4</button></li>
+            <li><button class="stage" data-stage="5" type="button">Exercise 5</button></li>
+            <li><button class="stage" data-stage="6" type="button">Exercise 6</button></li>
+            <li><button class="stage" data-stage="7" type="button">Exercise 7</button></li>
+        </ol>
+        <button class="solve-next" id="solve-next" type="button">Solve next exercise ▸</button>
+        <button class="previous-exercise" id="previous-exercise" type="button" aria-label="Previous exercise">‹</button>
+        <button class="next-exercise" id="next-exercise" type="button" aria-label="Next exercise">›</button>
+    </nav>
+
+    <progress id="progress" max="7" value="1" aria-label="Exercise">1 of 7</progress>
+
+    <section class="exercise-info" aria-labelledby="panel-title" aria-live="polite">
+        <h2 id="panel-title"></h2>
+        <p id="panel-text"></p>
+    </section>
+
+    <figure>
+        <svg id="diagram" viewBox="0 20 1500 860" role="group" aria-labelledby="diagram-title" aria-describedby="diagram-description" xmlns="http://www.w3.org/2000/svg">
+            <title id="diagram-title">How one message moves through the workshop app</title>
+            <desc id="diagram-description">A browser talks to a FastAPI server. The server runs a LangGraph graph made of an agent, its tools and, as the exercises are solved, memory and cache steps. The memory steps and tools use agent memory, and the cache steps use a semantic cache. Both are kept in Redis. Pieces that are not built yet are greyed out.</desc>
+            <defs>
+                <marker id="arrow-red" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                    <path class="arrowhead exercise-edge" d="M1 1 L9 5 L1 9 z" />
+                </marker>
+                <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+                    <path class="arrowhead" d="M1 1 L9 5 L1 9 z" />
+                </marker>
+            </defs>
+
+            <!-- The LangGraph frame sits behind everything inside it -->
+            <rect class="frame" x="490" y="150" width="830" height="450" rx="20" />
+            <image role="img" aria-label="LangGraph" href="icons/langgraph-logo-dark.svg" x="1177" y="162" width="123" height="26" />
+            <text class="label" x="1300" y="196" text-anchor="end">graph.py</text>
+
+
+            <!-- ========== Nodes ========== -->
+            <!-- Browser -->
+            <g class="node" tabindex="0" data-info="The page. It sends your message and displays what streams back.">
+                <rect class="box external" x="20" y="250" width="130" height="150" rx="10" />
+                <rect class="icon" x="55" y="272" width="60" height="44" rx="5" />
+                <path class="icon accent" d="M55 283 H115" />
+                <path class="icon" d="M65 296 H95 M65 305 H85" />
+                <text class="title" x="85" y="348">Browser</text>
+                <text class="sub" x="85" y="367">chat page</text>
+                <text class="file" x="85" y="383">frontend/</text>
+            </g>
+
+            <!-- Server -->
+            <g class="node" tabindex="0" data-info="The web server. POST /api/chat runs one turn: it passes the relevant message(s) to the AI agent and streams the response back to the page.">
+                <rect class="box" x="200" y="250" width="180" height="150" rx="10" />
+                <image aria-hidden="true" href="icons/fastapi-logo.svg" x="235" y="269" width="40" height="40" />
+                <rect class="icon" x="291" y="266" width="54" height="13" rx="3" />
+                <rect class="icon" x="291" y="283" width="54" height="13" rx="3" />
+                <rect class="icon" x="291" y="300" width="54" height="13" rx="3" />
+                <circle class="icon solid" cx="299" cy="272.5" r="1.8" />
+                <circle class="icon solid" cx="299" cy="289.5" r="1.8" />
+                <circle class="icon solid" cx="299" cy="306.5" r="1.8" />
+                <text class="title" x="290" y="342">FastAPI server</text>
+                <text class="sub" x="290" y="360">POST /api/chat</text>
+                <text class="file" x="290" y="377">chat_routes.py</text>
+                <text class="file" x="290" y="391">chat_service.py</text>
+            </g>
+
+            <!-- Check cache (exercise 6) -->
+            <g class="node exercise" tabindex="0" data-step="cache" data-ex="6" data-info="Exercise 6. First of all, look for a similar question that was already answered. On a hit, the reply goes straight back and the rest of the graph is skipped.">
+                <rect class="box" x="535" y="285" width="100" height="80" rx="8" />
+                <text class="title step" x="585" y="322">Check</text>
+                <text class="title step" x="585" y="341">cache</text>
+                <text class="file" x="585" y="357">nodes.py</text>
+                <g class="badge-wrap"><circle class="badge" cx="631" cy="285" r="12" />
+                <text class="badge-n" x="631" y="289.5">1</text></g>
+            </g>
+
+            <!-- Retrieve memories (exercise 5) -->
+            <g class="node exercise" tabindex="0" data-step="retrieve" data-ex="5" data-info="Exercise 5. Before the agent runs, the code looks up what we remember about the traveler and puts it in the prompt.">
+                <rect class="box" x="665" y="285" width="100" height="80" rx="8" />
+                <text class="title step" x="715" y="322">Retrieve</text>
+                <text class="title step" x="715" y="341">memories</text>
+                <text class="file" x="715" y="357">nodes.py</text>
+                <g class="badge-wrap"><circle class="badge" cx="761" cy="285" r="12" />
+                <text class="badge-n" x="761" y="289.5">1</text></g>
+            </g>
+
+            <!-- Agent -->
+            <g class="node" tabindex="0" data-step="agent" data-info="One model call. System instructions, any relevant memories and the conversation context are passed to the model, which then decides whether to answer or to run a tool.">
+                <rect class="box" x="805" y="277" width="160" height="96" rx="10" />
+                <g transform="translate(885 304)">
+                    <path class="icon accent-fill" d="M-4 -14 C-2 -5 1 -2 10 0 C1 2 -2 5 -4 14 C-6 5 -9 2 -18 0 C-9 -2 -6 -5 -4 -14 Z" />
+                    <path class="icon accent-fill" d="M10 -16 C11 -12 12 -11 16 -10 C12 -9 11 -8 10 -4 C9 -8 8 -9 4 -10 C8 -11 9 -12 10 -16 Z" />
+                </g>
+                <text class="title" x="885" y="338">Agent</text>
+                <text class="sub" x="885" y="352">model call</text>
+                <text class="file" x="885" y="366">nodes.py</text>
+                <g class="badge-wrap"><circle class="badge" cx="960" cy="277" r="12" />
+                <text class="badge-n" x="960" y="281.5">2</text></g>
+            </g>
+
+            <!-- Store in cache (exercise 6) -->
+            <g class="node exercise" tabindex="0" data-step="store" data-ex="7" data-info="Exercise 7. After a reply that came from the agent, store it, so the next similar question can be answered without a model call.">
+                <rect class="box" x="1010" y="285" width="140" height="80" rx="8" />
+                <text class="title step" x="1080" y="322">Store in</text>
+                <text class="title step" x="1080" y="341">cache</text>
+                <text class="file" x="1080" y="357">nodes.py</text>
+                <g class="badge-wrap"><circle class="badge" cx="1145" cy="285" r="12" />
+                <text class="badge-n" x="1145" y="289.5">5</text></g>
+            </g>
+
+            <!-- The graph ends: a cache hit returns the cached reply -->
+            <g class="node exercise" tabindex="0" data-ex="6" data-info="Exercise 6. On a cache hit, the cached reply is returned at once. Nothing else in the graph runs.">
+                <circle class="box" cx="585" cy="437" r="32" />
+                <text class="title tiny" x="585" y="434">return</text>
+                <text class="title tiny" x="585" y="447">response</text>
+            </g>
+
+            <!-- Tools: the memory tools are yours, the Google Maps tools come from Google's MCP server -->
+            <g class="node" tabindex="0" data-step="tools" data-info="The tools the agent can call. The two memory tools are yours to write. Google's come from its MCP server.">
+                <rect class="box" x="700" y="420" width="486" height="160" rx="8" />
+                <text class="title left step" x="716" y="441">Tools</text>
+                <g class="badge-wrap"><circle class="badge" cx="1176" cy="420" r="12" />
+                <text class="badge-n" x="1176" y="424.5">3</text></g>
+            </g>
+            <g class="node exercise" tabindex="0" data-ex="3" data-info="Exercise 3 and 4. The two memory tools are yours to write: one saves a lasting fact, one looks up what was saved.">
+                <rect class="box" x="712" y="452" width="290" height="116" rx="8" />
+                <text class="title left group" x="722" y="470">Memory tools</text>
+                <text class="file left" x="722" y="483">memory_tools.py</text>
+            </g>
+            <g class="node chip exercise" tabindex="0" data-ex="3" data-info="Exercise 3. The model calls this to keep a lasting fact. Its description tells the model when.">
+                <rect class="box" x="722" y="516" width="110" height="26" rx="13" />
+                <text class="code" x="777" y="533">save_memory</text>
+            </g>
+            <g class="node chip exercise" tabindex="0" data-ex="4" data-info="Exercise 4. The model calls this to look up what it saved, by meaning.">
+                <rect class="box" x="842" y="516" width="150" height="26" rx="13" />
+                <text class="code" x="917" y="533">search_memories</text>
+            </g>
+            <g class="node" tabindex="0" data-info="Google's tools. They come from Google's own MCP server, so there is nothing to write.">
+                <rect class="box external" x="1014" y="452" width="160" height="116" rx="8" />
+                <text class="title left group" x="1024" y="470">Google Maps tools</text>
+                <text class="file left" x="1024" y="483">maps_tools.py</text>
+            </g>
+            <g class="node chip" tabindex="0" data-info="Google Maps tool: places, with ratings and links.">
+                <rect class="box" x="1029" y="492" width="130" height="26" rx="13" />
+                <text class="code" x="1094" y="509">search_places</text>
+            </g>
+            <g class="node chip" tabindex="0" data-info="Google Maps tool: the weather for a place and day.">
+                <rect class="box" x="1029" y="526" width="130" height="26" rx="13" />
+                <text class="code" x="1094" y="543">lookup_weather</text>
+            </g>
+
+            <!-- OpenAI and Google Maps -->
+            <g class="node" tabindex="0" data-info="The model behind the agent.">
+                <rect class="box external" x="805" y="45" width="160" height="70" rx="10" />
+                <image aria-hidden="true" href="icons/openai-logo.svg" x="825" y="64" width="32" height="32" />
+                <text class="title" x="910" y="86">OpenAI</text>
+            </g>
+            <g class="node" tabindex="0" data-info="Google's own MCP server. It provides the tools and their descriptions.">
+                <rect class="box external" x="1310" y="45" width="170" height="70" rx="10" />
+                <image aria-hidden="true" href="icons/google-maps-logo.svg" x="1324" y="64" width="32" height="32" />
+                <text class="title card" x="1423" y="78">Google Maps</text>
+                <text class="sub" x="1423" y="97">MCP server</text>
+            </g>
+
+            <!-- Agent memory: its name sits at the side, so the box stays short -->
+            <g class="node" tabindex="0" data-info="The service that holds the session and the long-term memories, and extracts facts from sessions by itself.">
+                <rect class="box external" x="340" y="640" width="680" height="95" rx="14" />
+                <image aria-hidden="true" href="icons/favicon.png" x="356" y="671" width="32" height="32" />
+                <text class="title left heading" x="400" y="680">Agent</text>
+                <text class="title left heading" x="400" y="704">memory</text>
+            </g>
+            <g class="node exercise" tabindex="0" data-ex="2" data-info="The conversation so far, kept for as long as the session lasts. The service can summarize it when it gets long.">
+                <rect class="box" x="515" y="650" width="200" height="75" rx="8" />
+                <text class="title card" x="615" y="678">Session memory</text>
+                <text class="sub" x="615" y="694">working memory</text>
+                <text class="file" x="615" y="711">conversation_repository.py</text>
+            </g>
+            <g class="node exercise" tabindex="0" data-ex="3" data-info="Facts that outlive a conversation: preferences and trips, found again by meaning.">
+                <rect class="box" x="745" y="650" width="260" height="75" rx="8" />
+                <text class="title card" x="875" y="678">Long-term memory</text>
+                <text class="sub" x="875" y="694">preferences and past trips</text>
+                <text class="file" x="875" y="711">profile_repository.py</text>
+            </g>
+
+            <!-- Semantic cache -->
+            <g class="node exercise" tabindex="0" data-ex="6" data-info="Exercise 6. Stores earlier questions together with the answers they received. A new question with a similar meaning can reuse a stored answer.">
+                <rect class="box" x="1120" y="640" width="200" height="95" rx="14" />
+                <image aria-hidden="true" href="icons/playbooks-icon.png" x="1132" y="669" width="38" height="38" />
+                <text class="title left card" x="1178" y="684">Semantic cache</text>
+                <text class="sub left" x="1178" y="700">similar questions</text>
+                <text class="sub left" x="1178" y="714">and their answers</text>
+            </g>
+
+            <!-- Redis, under both -->
+            <g class="node" tabindex="0" data-info="Both are kept in Redis. It is already in the app.">
+                <rect class="box external" x="860" y="795" width="360" height="60" rx="12" />
+                <image aria-hidden="true" href="icons/redis-logo.svg" x="888" y="809" width="32" height="32" />
+                <text class="title left brand" x="932" y="832">Redis</text>
+            </g>
+
+            <!-- ========== Edges, drawn after the nodes so the arrowheads sit on top of the boxes ========== -->
+            <!-- Browser and server -->
+            <g class="edge flow"><path d="M150 305 H200" marker-end="url(#arrow)" /></g>
+            <g class="edge flow"><path d="M200 355 H150" marker-end="url(#arrow)" /></g>
+            <text class="label" x="175" y="296" text-anchor="middle">message</text>
+            <text class="label" x="175" y="374" text-anchor="middle">events</text>
+
+            <!-- The server calls the graph with the message (and the conversation, from exercise 2), and the graph answers -->
+            <g class="edge flow"><path d="M380 300 H481" marker-end="url(#arrow)" /></g>
+            <text class="label" x="435" y="294" text-anchor="middle" data-hide-from="2">message</text>
+            <g data-show-from="2">
+                <text class="label" x="435" y="266" text-anchor="middle">message +</text>
+                <text class="label" x="435" y="278" text-anchor="middle">conversation</text>
+                <text class="label" x="435" y="290" text-anchor="middle">history</text>
+            </g>
+            <g class="edge flow"><path d="M499 350 H380" marker-end="url(#arrow)" /></g>
+            <text class="label" x="435" y="366" text-anchor="middle">agent</text>
+            <text class="label" x="435" y="378" text-anchor="middle">response</text>
+
+            <!-- Where the message enters the graph and where the reply leaves it, on the frame itself -->
+            <g class="node" tabindex="0" data-info="Start: where the message enters the graph.">
+                <circle class="box" cx="490" cy="300" r="8" />
+            </g>
+            <g class="node" tabindex="0" data-info="End: where the graph ends and the reply goes back to the server.">
+                <circle class="box" cx="490" cy="350" r="8" />
+            </g>
+
+            <!-- Inside the graph -->
+            <g class="edge flow exercise-edge" data-ex="6"><path d="M635 325 H665" marker-end="url(#arrow-red)" /></g>
+            <text class="label small" x="650" y="317" text-anchor="middle" data-ex="6">miss</text>
+            <g class="edge flow exercise-edge" data-ex="6"><path d="M585 365 V405" marker-end="url(#arrow-red)" /></g>
+            <text class="label" x="597" y="389" data-ex="6">hit</text>
+            <g class="edge flow exercise-edge" data-ex="5"><path d="M765 325 H805" marker-end="url(#arrow-red)" /></g>
+            <g class="edge flow exercise-edge" data-ex="7"><path d="M965 325 H1010" marker-end="url(#arrow-red)" /></g>
+            <g class="edge flow"><path d="M885 373 V420" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
+
+            <!-- Each cache step has its own route to the semantic cache. The lookup hops over the model line. -->
+            <g class="edge flow exercise-edge" data-ex="6"><path d="M585 285 V230 H868 q17 -14 34 0 H1270 V640" marker-start="url(#arrow-red)" /></g>
+            <text class="label" x="600" y="222" data-ex="6">check if this was asked before</text>
+            <g class="edge flow exercise-edge" data-ex="7"><path d="M1150 325 H1220 V640" marker-end="url(#arrow-red)" /></g>
+            <text class="label" x="1210" y="395" text-anchor="end" data-ex="7">store the answer</text>
+
+            <!-- Outside services. The Google line hops over the cache route. -->
+            <g class="edge flow"><path d="M885 115 V277" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
+            <text class="label" x="898" y="138">model calls</text>
+            <g class="edge flow"><path d="M1395 115 V510 H1281 q-11 -12 -22 0 H1231 q-11 -12 -22 0 H1174" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
+            <text class="label" x="1407" y="250">MCP</text>
+
+            <!-- Into agent memory: from the server, and from each tool and the retrieve step -->
+            <g class="edge flow exercise-edge" data-ex="2"><path d="M290 400 V620 H615 V650" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)" /></g>
+            <text class="label" x="302" y="540" data-ex="2">save and read</text>
+            <g class="edge flow exercise-edge" data-ex="3"><path d="M790 542 V650" marker-end="url(#arrow-red)" /></g>
+            <g class="edge flow exercise-edge" data-ex="4"><path d="M960 650 V542" marker-end="url(#arrow-red)" /></g>
+            <g class="edge flow exercise-edge" data-ex="5"><path d="M765 650 V620 H685 V365" marker-end="url(#arrow-red)" /></g>
+            <g class="edge flow exercise-edge" data-ex="3"><path d="M715 687 H745" marker-end="url(#arrow-red)" /></g>
+
+            <!-- Both go to Redis -->
+            <g class="edge flow"><path d="M990 735 V795" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
+            <g class="edge flow"><path d="M1190 735 V795" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
+        </svg>
+        <figcaption class="legend">
+            <p class="legend-title" id="legend-title">Legend</p>
+            <ul aria-labelledby="legend-title">
+                <li><i class="swatch"></i> Already in the app</li>
+                <li><i class="swatch exercise"></i> Built by you in an exercise</li>
+                <li><i class="swatch not-built"></i> Not built yet</li>
+            </ul>
+        </figcaption>
+    </figure>
+
+    <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+</main>
+
+<script>
+    const STAGES = {
+        1: {
+            title: 'Exercise 1 · See what no memory looks like',
+            text: 'The agent answers every message on its own. Nothing is read from or written to agent memory, so a new session starts from nothing.',
+        },
+        2: {
+            title: 'Exercise 2 · Working memory',
+            text: 'The server saves each turn to the session and reads it back before every model call, so the agent sees the conversation so far.',
+        },
+        3: {
+            title: 'Exercise 3 · Storing long-term memory',
+            text: 'The model decides a fact is worth keeping and calls save_memory. It lands in long-term memory, and the service also extracts facts from the session on its own.',
+        },
+        4: {
+            title: 'Exercise 4 · Retrieving long-term memory, the model decides',
+            text: 'In a new session the model calls search_memories to look up what it saved. The search is by meaning, so different words find the same fact.',
+        },
+        5: {
+            title: 'Exercise 5 · Retrieving long-term memory, the code decides',
+            text: 'A retrieve step now comes first in the graph, so what we remember is in the prompt from the first word.',
+        },
+        6: {
+            title: 'Exercise 6 · Semantic caching, check the cache',
+            text: 'A similar question may already have an answer. A cache check now comes first: on a hit, the reply goes straight back and the rest of the graph is skipped. On a miss, the graph runs as before.',
+        },
+        7: {
+            title: 'Exercise 7 · Semantic caching, store in the cache',
+            text: 'After the agent has answered, the reply is stored in the cache. The next question with a similar meaning is then a hit and needs no model call.',
+        },
+    };
+    const LAST_STAGE = 7;
+
+    const title = document.getElementById('panel-title');
+    const text = document.getElementById('panel-text');
+    const progress = document.getElementById('progress');
+    const solveNextButton = document.getElementById('solve-next');
+    const previousButton = document.getElementById('previous-exercise');
+    const nextButton = document.getElementById('next-exercise');
+    const stageButtons = document.querySelectorAll('.stage');
+
+    let stage = 1;
+
+    function goTo(number) {
+        render(Math.min(Math.max(number, 1), LAST_STAGE));
+    }
+
+    function render(next) {
+        const previous = stage;
+        stage = next;
+
+        // What is built at this stage is lit. What is not is greyed out.
+        document.querySelectorAll('#diagram [data-ex]').forEach((element) => {
+            const lit = stage >= Number(element.dataset.ex);
+            const wasLit = previous >= Number(element.dataset.ex);
+            element.classList.toggle('not-built', !lit);
+            if (element.classList.contains('edge')) element.classList.toggle('flow', lit);
+            if (lit && !wasLit && next > previous) {
+                element.classList.remove('pulse');
+                void element.getBoundingClientRect(); // restart the animation
+                element.classList.add('pulse');
+            }
+        });
+
+        // The steps of the graph are numbered in order. A step that is not built yet has no number.
+        let number = 0;
+        for (const step of ['cache', 'retrieve', 'agent', 'tools', 'store']) {
+            const element = document.querySelector(`#diagram [data-step="${step}"]`);
+            const badge = element.querySelector('.badge-wrap');
+            const lit = !element.classList.contains('not-built');
+            badge.toggleAttribute('hidden', !lit);
+            if (lit) badge.querySelector('.badge-n').textContent = ++number;
+        }
+
+        // Labels that change with the exercise
+        document.querySelectorAll('#diagram [data-hide-from]').forEach((element) => {
+            element.toggleAttribute('hidden', stage >= Number(element.dataset.hideFrom));
+        });
+        document.querySelectorAll('#diagram [data-show-from]').forEach((element) => {
+            element.toggleAttribute('hidden', stage < Number(element.dataset.showFrom));
+        });
+
+        stageButtons.forEach((button) => {
+            const buttonStage = Number(button.dataset.stage);
+            if (buttonStage === stage) button.setAttribute('aria-current', 'step');
+            else button.removeAttribute('aria-current');
+            button.classList.toggle('done', buttonStage < stage);
+        });
+        progress.value = stage;
+        progress.textContent = `${stage} of ${LAST_STAGE}`;
+        solveNextButton.disabled = stage === LAST_STAGE;
+        previousButton.disabled = stage === 1;
+        nextButton.disabled = stage === LAST_STAGE;
+
+        title.textContent = STAGES[stage].title;
+        text.textContent = STAGES[stage].text;
+    }
+
+    stageButtons.forEach((button) => button.addEventListener('click', () => goTo(Number(button.dataset.stage))));
+    solveNextButton.addEventListener('click', () => goTo(stage + 1));
+    nextButton.addEventListener('click', () => goTo(stage + 1));
+    previousButton.addEventListener('click', () => goTo(stage - 1));
+    // The arrow keys move between exercises too
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowRight') goTo(stage + 1);
+        if (event.key === 'ArrowLeft') goTo(stage - 1);
+    });
+
+    // Pointing at a piece, or tabbing to it, says what it is in a tooltip next to it. The text at the top stays as it is.
+    const tooltip = document.getElementById('tooltip');
+
+    function showTooltip(element) {
+        const exercise = element.dataset.ex ? `Exercise ${element.dataset.ex}` : 'Already in the app';
+        const heading = document.createElement('strong');
+        heading.textContent = exercise;
+        tooltip.replaceChildren(heading, element.dataset.info);
+        tooltip.hidden = false;
+        element.setAttribute('aria-describedby', tooltip.id);
+
+        // Below the piece, or above it when there is no room, and kept inside the window.
+        // This is the one place the script sets a style: the position depends on where the piece is.
+        const piece = element.getBoundingClientRect();
+        const card = tooltip.getBoundingClientRect();
+        const margin = 12;
+        const left = Math.min(Math.max(piece.left + piece.width / 2 - card.width / 2, margin), window.innerWidth - card.width - margin);
+        const below = piece.bottom + 10;
+        const top = below + card.height > window.innerHeight - margin ? piece.top - card.height - 10 : below;
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${Math.max(top, margin)}px`;
+    }
+
+    function hideTooltip(element) {
+        tooltip.hidden = true;
+        element?.removeAttribute('aria-describedby');
+    }
+
+    document.querySelectorAll('#diagram [data-info]').forEach((element) => {
+        element.addEventListener('mouseenter', () => showTooltip(element));
+        element.addEventListener('mouseleave', () => hideTooltip(element));
+        element.addEventListener('focus', () => showTooltip(element));
+        element.addEventListener('blur', () => hideTooltip(element));
+    });
+    window.addEventListener('scroll', () => hideTooltip(), { passive: true });
+
+    render(1);
+</script>
+</body>
+</html>
