@@ -34,8 +34,13 @@ export class ChatWindow {
         this.scrollToEnd();
     }
 
-    showStep(key, step, status, durationMs) {
-        this.taskProgress.show(key, step, status, durationMs);
+    showStep(key, label, status, durationMs) {
+        this.taskProgress.show(key, label, status, durationMs);
+        this.scrollToEnd();
+    }
+
+    showStepInfo(key, info) {
+        this.taskProgress.showInfo(key, info);
         this.scrollToEnd();
     }
 

@@ -4,7 +4,7 @@ from typing import Annotated, TypedDict
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 
-from backend.modules.chat.domain.attachments import Attachment
+from backend.modules.ai.types import Attachment
 
 
 class AgentState(TypedDict):
@@ -21,3 +21,5 @@ class AgentState(TypedDict):
     # The places and weather the tools found this turn, as cards for the page. Each tool call returns only its own
     # cards, and `operator.add` joins them to the list, so the cards of one call do not replace those of another.
     attachments: Annotated[list[Attachment], operator.add]
+    # The reply came from the semantic cache, so the agent did not run.
+    is_cache_hit: bool

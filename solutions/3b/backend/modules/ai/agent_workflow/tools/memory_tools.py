@@ -3,7 +3,7 @@
 #
 # The tools the model calls to save and look up what it knows about the traveler. The model decides when.
 #
-# - **Exercise 3B (solved):** the `save_memory` tool. Step A is `create_long_term_memory` in `user/data/profile_repository.py`.
+# - **Exercise 3B (solved):** the `save_memory` tool. Step A is `create_long_term_memory` in `agent_memory/long_term_memory.py`.
 # - **Exercise 4B:** the `search_memories` tool. Step A is `search_long_term_memory` in the same file.
 
 
@@ -15,7 +15,7 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
 from backend.lib.log import log
-from backend.modules.user.data.profile_repository import create_long_term_memory, search_long_term_memory
+from backend.modules.ai.agent_memory.long_term_memory import create_long_term_memory, search_long_term_memory
 
 
 # %% [markdown]
@@ -46,8 +46,8 @@ async def save_memory_tool(fact: str, memory_type: str, topics: list[str] | None
     """Save a lasting fact about the traveler as a long-term memory, so the agent knows it in later conversations."""
     user_id = config["configurable"]["user_id"]
     log(f'save_memory: "{fact}" ({memory_type})')
-    await create_long_term_memory(user_id=user_id, text=fact, memory_type=memory_type, topics=topics)
-    return {"success": True, "message": "Saved. You will remember this in future conversations."}
+    response = await create_long_term_memory(user_id=user_id, text=fact, memory_type=memory_type, topics=topics)
+    return response.model_dump()
 
 
 # %% [markdown]
@@ -77,8 +77,8 @@ async def search_memories_tool(query: str, memory_type: str | None = None, *, co
     """Look up what the traveler told us before, by meaning, in their long-term memories."""
     user_id = config["configurable"]["user_id"]
     log(f'search_memories: "{query}"{f" ({memory_type})" if memory_type else ""}')
-    # TODO: search here, and return {"found": True, "memories": [...]} or {"found": False, "message": "..."}.
-    return {"found": False, "message": "No relevant memories found."}
+    # TODO: search here, and return the entries.
+    return []
 
 
 # %% [markdown]
@@ -106,10 +106,7 @@ async def search_memories_tool(query: str, memory_type: str | None = None, *, co
 #     """Look up what the traveler told us before, by meaning, in their long-term memories."""
 #     user_id = config["configurable"]["user_id"]
 #     log(f'search_memories: "{query}"{f" ({memory_type})" if memory_type else ""}')
-#     entries = await search_long_term_memory(user_id=user_id, query=query, memory_type=memory_type)
-#     if entries:
-#         return {"found": True, "memories": [{"fact": entry["text"], "memoryType": entry["memoryType"], "topics": entry["topics"]} for entry in entries]}
-#     return {"found": False, "message": "No relevant memories found."}
+#     return await search_long_term_memory(user_id=user_id, query=query, memory_type=memory_type)
 # ```
 #
 # </details>

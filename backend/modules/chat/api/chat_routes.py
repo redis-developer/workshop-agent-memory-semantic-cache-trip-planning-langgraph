@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
-from backend.modules.ai.agent_workflow.index import TurnEvent
+from backend.modules.ai import TurnEvent
 from backend.modules.chat.domain.chat_service import clear_conversation, get_conversation, run_turn
 
 chat_router = APIRouter(prefix="/api/chat")

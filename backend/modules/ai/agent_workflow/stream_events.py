@@ -3,17 +3,24 @@ from typing import Any, AsyncIterator, Callable, Literal, TypedDict
 
 from langchain_core.messages import AIMessageChunk
 
-from backend.modules.chat.domain.attachments import Attachment
+from backend.modules.ai.types import Attachment
 
 
 # What the server tells the page while a turn runs. One per line of the response.
 class StepEvent(TypedDict):
     type: Literal["step"]
     key: str  # tells one run of a step from another: the agent step runs again after each pass of the tools
-    step: str
-    status: Literal["started", "finished"]
+    step: str  # the name of the node or tool
+    label: str  # what the page shows for it
+    status: Literal["started", "finished", "failed"]  # "failed": a tool call that raised
     input: Any  # what a tool was called with, sent when it starts
     durationMs: int  # how long the step took, sent when it finishes
+
+
+class InfoEvent(TypedDict):
+    type: Literal["info"]
+    key: str  # the step it is about
+    info: str  # what the step says about what it did, such as "Found 5 places"
 
 
 class MemoriesEvent(TypedDict):
@@ -30,7 +37,7 @@ class UsageEvent(TypedDict):
     type: Literal["usage"]
     usage: dict  # the tokens used by every model call in the turn
     responseTime: float  # seconds
-    cached: bool  # the reply came from the semantic cache
+    isCacheHit: bool  # the reply came from the semantic cache
 
 
 class AttachmentsEvent(TypedDict):
@@ -48,10 +55,22 @@ class ErrorEvent(TypedDict):
     message: str
 
 
-TurnEvent = StepEvent | MemoriesEvent | TokenEvent | AttachmentsEvent | UsageEvent | DoneEvent | ErrorEvent
+TurnEvent = StepEvent | InfoEvent | MemoriesEvent | TokenEvent | AttachmentsEvent | UsageEvent | DoneEvent | ErrorEvent
+
+# What the page shows for each step, by the name of the node or tool. A name that is not here is shown as it is.
+STEP_LABELS = {
+    "check_cache": "Checking if a similar question was answered",
+    "retrieve_memories": "Looking up what I remember about you",
+    "agent": "Thinking",
+    "store_in_cache": "Deciding if this answer can be reused",
+    "search_memories": "Searching your memories",
+    "save_memory": "Saving a memory",
+    "search_places": "Searching Google Maps for places",
+    "lookup_weather": "Checking the weather",
+}
 
 # What to ask the graph to stream. "tools" is accepted by LangGraph but is not in its documented list of modes.
-STREAM_MODES = ["values", "updates", "tasks", "tools", "messages"]
+STREAM_MODES = ["values", "updates", "tasks", "tools", "messages", "custom"]
 
 
 async def read_run(stream: AsyncIterator[dict], send: Callable[[TurnEvent], None]) -> dict:
@@ -70,14 +89,17 @@ async def read_run(stream: AsyncIterator[dict], send: Callable[[TurnEvent], None
     tool_names: dict[str, str] = {}
     # When each step started, to say how long it took when it finishes
     started_at: dict[str, float] = {}
+    # The node that is running. A node writes its info without saying who it is, and the nodes run one at a time.
+    running_node: str | None = None
 
     def report_step(key: str, step: str, status: str, **extra) -> None:
+        label = STEP_LABELS.get(step, step)
         if status == "started":
             started_at[key] = time.perf_counter()
-            send({"type": "step", "key": key, "step": step, "status": "started", **extra})
+            send({"type": "step", "key": key, "step": step, "label": label, "status": "started", **extra})
         else:
             duration_ms = round((time.perf_counter() - started_at.pop(key, time.perf_counter())) * 1000)
-            send({"type": "step", "key": key, "step": step, "status": "finished", "durationMs": duration_ms})
+            send({"type": "step", "key": key, "step": step, "label": label, "status": status, "durationMs": duration_ms})
 
     async for part in stream:
         kind, data = part["type"], part["data"]
@@ -95,6 +117,11 @@ async def read_run(stream: AsyncIterator[dict], send: Callable[[TurnEvent], None
                 values = values or {}
                 if node == "retrieve_memories":
                     send({"type": "memories", "memories": values.get("long_term_memories", [])})
+                # A reply from the cache is complete when the step is done: its cards and its text go to the page together.
+                if node == "check_cache" and values.get("is_cache_hit"):
+                    if values["attachments"]:
+                        send({"type": "attachments", "attachments": values["attachments"]})
+                    send({"type": "token", "text": values["messages"][0].text})
                 # The tools node returns one update for each tool call, with the cards it found. They are known as soon
                 # as the tools are done, so they are on the page before the reply is written.
                 if node == "tools":
@@ -107,12 +134,18 @@ async def read_run(stream: AsyncIterator[dict], send: Callable[[TurnEvent], None
             # reported through its tool calls instead.
             if data["name"] == "tools":
                 continue
+            running_node = None if "result" in data else data["id"]
             report_step(data["id"], data["name"], "finished" if "result" in data else "started")
+        elif kind == "custom":
+            # What a step wrote with `get_stream_writer()`. A tool says which call it is about, a node does not.
+            send({"type": "info", "key": data.get("key", running_node), "info": data["info"]})
         elif kind == "tools":
             if data["event"] == "tool-started":
                 tool_names[data["tool_call_id"]] = data["tool_name"]
                 report_step(data["tool_call_id"], data["tool_name"], "started", input=data.get("input"))
-            elif data["event"] in ("tool-finished", "tool-error"):
+            elif data["event"] == "tool-finished":
                 report_step(data["tool_call_id"], tool_names.get(data["tool_call_id"], ""), "finished")
+            elif data["event"] == "tool-error":
+                report_step(data["tool_call_id"], tool_names.get(data["tool_call_id"], ""), "failed")
 
     return final_state

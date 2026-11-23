@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from backend.modules.ai.agent_workflow.index import start_agent
+from backend.modules.ai import start_agent
 from backend.modules.chat.api.chat_routes import chat_router
 from backend.modules.user.api.user_routes import user_router
 

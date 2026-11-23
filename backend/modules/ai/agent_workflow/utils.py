@@ -1,6 +1,7 @@
 """
-Turning what the Google Maps tools return into the cards the page shows. The tools node calls `add_cards` after
-each tool call, so the cards are in the state, and on the page, before the reply is written.
+Turning what the tools return into the cards the page shows, and the wording of the note for memories. `process_tool_call`
+(`tools/middleware.py`) uses these after each tool call, so the cards are in the state, and on the page, before the
+reply is written.
 This is boilerplate. You do not need to change anything here.
 """
 
@@ -8,9 +9,7 @@ import json
 import math
 import re
 
-from langgraph.types import Command
-
-from backend.modules.chat.domain.attachments import Attachment, PlaceCard, WeatherCard
+from backend.modules.ai.types import Attachment, PlaceCard, WeatherCard
 
 
 def get_nested(value, *path):
@@ -91,8 +90,8 @@ def weather_card(result: dict) -> WeatherCard | None:
     }
 
 
-def read_tool_result(message) -> dict:
-    """What a tool returned, as a dict. Its message holds the JSON as text, or as a list of text parts."""
+def read_tool_result(message) -> dict | list:
+    """What a tool returned, as the dict or list it was. Its message holds the JSON as text, or as a list of text parts."""
     content = message.content
     text = "".join(part.get("text", "") if isinstance(part, dict) else str(part) for part in content) if isinstance(content, list) else content
     try:
@@ -116,11 +115,6 @@ def maps_attachments(messages: list) -> list[Attachment]:
     return attachments
 
 
-async def add_cards(request, execute):
-    """
-    Wraps each tool call of the tools node (`ToolNode(tools, awrap_tool_call=add_cards)`). The tool runs as usual,
-    and what the call returns is also turned into cards, which are added to `state["attachments"]`.
-    Only the Google Maps tools make cards: for the other tools the list is empty.
-    """
-    result = await execute(request)
-    return Command(update={"messages": [result], "attachments": maps_attachments([result])})
+def memories_info(count: int) -> str:
+    """The line for the page when memories were looked up, from the retrieve step and from the search tool alike."""
+    return f"Found {count} memories" if count else "No memories found"

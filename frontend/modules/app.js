@@ -87,8 +87,11 @@ if (userId) {
 function handleEvent(event) {
     switch (event.type) {
         case 'step':
-            chatWindow.showStep(event.key, event.step, event.status, event.durationMs);
+            chatWindow.showStep(event.key, event.label, event.status, event.durationMs);
             if (event.input) turnLines.push(`${event.step}(${JSON.stringify(event.input)})`);
+            break;
+        case 'info':
+            chatWindow.showStepInfo(event.key, event.info);
             break;
         case 'memories':
             recalledMemoryIds = event.memories.map((memory) => memory.id);

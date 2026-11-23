@@ -4,7 +4,7 @@
 # Long-term memory in Redis Agent Memory. Every entry has an owner (`owner_id`), and a search can say whose entries
 # it may look in.
 #
-# - **Exercise 3A:** create a long-term memory.
+# - **Exercise 3A (solved):** create a long-term memory.
 # - **Exercise 4A:** search long-term memory.
 #
 # Steps B are in `ai/agent_workflow/tools/memory_tools.py`.
@@ -14,7 +14,9 @@
 from typing import Literal, TypedDict
 from uuid import uuid4
 
-from backend.lib.agent_memory_client import get_agent_memory
+from redis_agent_memory.models import BulkCreateLongTermMemoriesResponseContent
+
+from backend.modules.ai.agent_memory.client import agent_memory
 from backend.lib.log import log
 
 # What kind of thing an entry is:
@@ -36,37 +38,18 @@ ENTRIES_PER_SEARCH = 5
 
 
 # %% [markdown]
-# ## Exercise 3A: create a long-term memory
-#
-# **What to do:** add one memory to the traveler's profile, with `bulk_create_long_term_memories_async`.
-#
-# - Each memory has a new `memory_id`, its `text`, an `owner_id` (the traveler), a `memory_type` and, if there are any, `topics`.
-# - The type is `semantic` for a lasting preference and `episodic` for something that happened.
+# ## Exercise 3A (solved): create a long-term memory
 
 
 # %%
-async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> None:
-    """Add one entry to a traveler's profile."""
-    # TODO (Exercise 3A): create the memory with `get_agent_memory().bulk_create_long_term_memories_async(memories=[...])`.
-    # The memory is a dict with "memory_id" (use `str(uuid4())`), "text", "owner_id", "memory_type" and, if there are any, "topics".
-    # Log it when it is saved, so it shows in the terminal.
-
-
-# %% [markdown]
-# <details>
-# <summary>Show solution</summary>
-#
-# ```python
-# async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> None:
-#     """Add one entry to a traveler's profile."""
-#     topics = topics or []
-#     await get_agent_memory().bulk_create_long_term_memories_async(
-#         memories=[{"memory_id": str(uuid4()), "text": text, "owner_id": user_id, "memory_type": memory_type, **({"topics": topics} if topics else {})}]
-#     )
-#     log(f"💾 {memory_type} memory saved for {user_id}")
-# ```
-#
-# </details>
+async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> BulkCreateLongTermMemoriesResponseContent:
+    """Add one entry to a traveler's profile. Returns what Agent Memory answered: the ids it created, and any errors."""
+    topics = topics or []
+    response = await agent_memory.bulk_create_long_term_memories_async(
+        memories=[{"memory_id": str(uuid4()), "text": text, "owner_id": user_id, "memory_type": memory_type, **({"topics": topics} if topics else {})}]
+    )
+    log(f"💾 {memory_type} memory saved for {user_id}")
+    return response
 
 
 # %% [markdown]
@@ -87,7 +70,7 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
     Search long-term memories by meaning. With a `user_id` it only looks in that traveler's entries, and with a
     `memory_type` it only looks at that type. It returns the closest entries, at most `limit`.
     """
-    # TODO (Exercise 4A): search with `get_agent_memory().search_long_term_memory_async(request={...})`.
+    # TODO (Exercise 4A): search with `agent_memory.search_long_term_memory_async(request={...})`.
     # Return the entries as a list of ProfileEntry (see the top of this file).
     # Until you write this, the agent finds nothing. Remove the line below when you have.
     return []
@@ -107,7 +90,7 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
 #         **({"owner_id": {"eq": user_id}} if user_id else {}),
 #         **({"memory_type": {"eq": memory_type}} if memory_type else {}),
 #     }
-#     result = await get_agent_memory().search_long_term_memory_async(
+#     result = await agent_memory.search_long_term_memory_async(
 #         request={"query": query, "limit": limit, **({"filter_": {**filter_, "op": "ALL"}} if filter_ else {})}
 #     )
 #     entries: list[ProfileEntry] = [

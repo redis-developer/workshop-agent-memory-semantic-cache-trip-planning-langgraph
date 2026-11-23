@@ -19,6 +19,7 @@ You will give a trip-planning agent two kinds of memory: what was said in this c
 - The agent runs on [LangGraph](https://langchain-ai.github.io/langgraph/), [FastAPI](https://fastapi.tiangolo.com/) and OpenAI.
 - It finds places and the weather with [Google Maps](https://developers.google.com/maps/ai/maps-experience-agent-tools/reference/mcp).
 - Everything it remembers is kept in [Redis Agent Memory](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/).
+- The answers it reuses are kept in a [RedisVL](https://redis.io/docs/latest/develop/ai/redisvl/) semantic cache.
 
 ## Set up
 
@@ -47,7 +48,7 @@ The agent finds places and the weather through Google's own [Google Maps MCP ser
 
 These steps follow the [quickstart](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/quickstart/).
 
-**A database to attach it to.** The service needs an active Redis Cloud database on a Pro or Essentials plan, with a public endpoint, Redis Search and the default user enabled. See the [prerequisites and limitations](https://redis.io/docs/latest/operate/iris/agent-memory/create-service#prerequisites-and-limitations).
+**A database to attach it to.** The service needs an active Redis Cloud database, with a public endpoint, Redis Search and the default user enabled. If you don't have one, [create a database](https://redis.io/docs/latest/operate/rc/databases/create-database/). Once it exists, copy its public endpoint and the password of the default user from the [Redis Cloud console](https://cloud.redis.io/), and put them together as `redis://default:<password>@<endpoint>`. This is your `REDIS_URL`, which the semantic cache uses later.
 
 **Create the service.** In the [Redis Cloud console](https://cloud.redis.io/), choose **Agent Memory** under **Iris**, then **Create Agent Memory service** and **Customize settings**. Enter a name, pick the database and its `default` user, and under **Memory configuration** enter:
 
@@ -55,7 +56,7 @@ These steps follow the [quickstart](https://redis.io/docs/latest/develop/ai/cont
 |---|---|
 | Short-term TTL | 1 day |
 | Long-term TTL | 365 days |
-| Extraction cadence | 1 minute |
+| Extraction cadence | 5 minutes |
 
 Choose **Create**.
 
@@ -68,18 +69,15 @@ Choose **Create**.
 | Setting | Value |
 |---|---|
 | Description | Lasting travel preferences and standing instructions for a traveler |
-| Extraction prompt | Extract a traveler preference only when the user states a lasting travel preference, a constraint or a standing instruction. Preserve explicit dietary requirements and food preferences. Ignore one-off trip details such as this trip's destination, dates or places. Put anything that does not fit another field under standing_instructions. |
+| Extraction prompt | Extract a traveler preference only when the user explicitly states something stable about themselves: a lasting travel preference, a constraint such as a dietary requirement, or a standing instruction. Preserve explicit dietary requirements and food preferences. Ignore transient task details, which belong to the current session only and must not become long-term memories: a destination they are interested in or about to visit ("I want to go to Goa", "I'm going to San Francisco next month"), trip dates, questions about places or the weather ("what is the weather like in Bengaluru?"), and requests for a plan or recommendation. Do not infer a preference from what the user only asked about. Put anything that does not fit another field under standing_instructions. |
 
 | Field | Type | Description |
 |---|---|---|
 | `interests` | `list[str]` | Interests from this list: food, landmarks, offbeat, slow, outdoors, nightlife, culture |
 | `budget` | `str` | One of low, mid or high |
 | `group_size` | `str` | One of solo, pair, family or group |
-| `dietary_requirements` | `list[str]` | Dietary requirements that affect recommendations, such as vegetarian or nut allergy |
-| `food_preferences` | `list[str]` | Cuisines, flavors or dining preferences the traveler likes or dislikes |
+| `food_and_dietary` | `list[str]` | Dietary requirements and food preferences, such as vegetarian, nut allergy or loves street food |
 | `standing_instructions` | `list[str]` | Rules to apply every time, such as "always include a rest day" or "avoid long walks" |
-
-**Two more settings.** You will see their effect in exercise 2 and exercise 3. The exclusion prompt matters most: without it the service also saves what the agent said, and places you only asked about, as if they were facts about you.
 
 | Setting | Suggested value |
 |---|---|
@@ -118,6 +116,14 @@ uv run python scripts/seed_agent_memory.py
 
 This gives three travelers (ashwin, bhavana and kyle) some memories already, so there is something to find in exercises 4 and 5. Log in with one of those names to use them. Add `--reset` to delete their memories and start them over.
 
+### Seed the semantic cache (for exercise 6)
+
+```bash
+uv run python scripts/seed_semantic_cache.py
+```
+
+This fills the cache with answers to 15 questions about popular places (Goa, Bali, Paris, New York and more), each with its place cards, so there is something to find in exercise 6. It uses the database from your `REDIS_URL`. It is safe to run again: it empties the cache first, including any answer the cache kept by itself in exercise 7, then adds these answers.
+
 ## Workshop instructions
 
 You spend your time on the memory code. The rest of the app is already written. The app you start with has no memory at all, and each exercise adds one piece.
@@ -131,7 +137,7 @@ To see how the pieces fit together, and which ones each exercise adds, open the 
 **Or run them as notebooks in JupyterLab (optional).** The exercise files can be run cell by cell, so you can try a step on its own before the app uses it. Register the kernel once (a Codespace already has it), then start JupyterLab:
 
 ```bash
-uv run python -m ipykernel install --sys-prefix --name workshop-agent-memory-playbook-trip-planning-python --display-name "Reuse Knowledge for Agentic AI" --env PYTHONPATH "$(pwd)"
+uv run python -m ipykernel install --sys-prefix --name workshop-agent-memory-semantic-cache-trip-planning-langgraph --display-name "Reuse Knowledge for Agentic AI" --env PYTHONPATH "$(pwd)"
 uv run jupyter lab
 ```
 
@@ -144,24 +150,19 @@ Right-click an exercise file and choose **Open With → Notebook**. When it asks
 | Exercise | What to do | Relevant files |
 |---|---|---|
 | 1. See what no memory looks like | Run the app and watch it forget | none |
-| 2. Working memory | Remember the conversation so far | [`conversation_repository.py`](backend/modules/chat/data/conversation_repository.py), [`chat_service.py`](backend/modules/chat/domain/chat_service.py) |
-| 3. Storing long-term memory | Let the model save a lasting fact | [`profile_repository.py`](backend/modules/user/data/profile_repository.py), [`memory_tools.py`](backend/modules/ai/agent_workflow/tools/memory_tools.py) |
-| 4. Retrieving long-term memory (the model decides) | Let the model search what it saved | [`profile_repository.py`](backend/modules/user/data/profile_repository.py), [`memory_tools.py`](backend/modules/ai/agent_workflow/tools/memory_tools.py) |
+| 2. Working memory | Remember the conversation so far | [`session_memory.py`](backend/modules/ai/agent_memory/session_memory.py), [`index.py`](backend/modules/ai/agent_workflow/index.py) |
+| 3. Storing long-term memory | Let the model save a lasting fact | [`long_term_memory.py`](backend/modules/ai/agent_memory/long_term_memory.py), [`memory_tools.py`](backend/modules/ai/agent_workflow/tools/memory_tools.py) |
+| 4. Retrieving long-term memory (the model decides) | Let the model search what it saved | [`long_term_memory.py`](backend/modules/ai/agent_memory/long_term_memory.py), [`memory_tools.py`](backend/modules/ai/agent_workflow/tools/memory_tools.py) |
 | 5. Retrieving long-term memory (the code decides) | Look up memories before the agent runs | [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
 
 #### Part 2: Semantic cache
 
 | Exercise | What to do | Relevant files |
 |---|---|---|
-| 6. Semantic caching: check the cache | Find a stored answer for a question with a similar meaning, and skip the agent on a match | [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
-| 7. Semantic caching: store in the cache | Keep answers that are worth reusing, so similar questions find them | [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
+| 6. Semantic caching: check the cache | Find a stored answer for a question with a similar meaning, and skip the agent on a match | [`public_cache.py`](backend/modules/ai/semantic_cache/public_cache.py), [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
+| 7. Semantic caching: store in the cache | Keep answers that are worth reusing, so similar questions find them | [`public_cache.py`](backend/modules/ai/semantic_cache/public_cache.py), [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
 
 ### Exercises
-
-Most exercises have two steps:
-
-- **Step A: the memory service.** Write the calls to Redis Agent Memory. You can try them on their own, and the result shows in the **Memory** tab.
-- **Step B: the agent.** Connect it to the agent, as a tool or as a step in the graph.
 
 Where to write: look for `# TODO` in the files. The hint above each one says what to do.
 
@@ -200,7 +201,7 @@ Make a lasting fact outlive the conversation.
 
 Full solution: `./solve 3`
 
-The service also reads each conversation and extracts memories on its own, about a minute after the turn. `save_memory` writes straight away, and the model chooses what to keep.
+The service also reads each conversation and extracts memories on its own, about 5 minutes after the turn. `save_memory` writes straight away, and the model chooses what to keep.
 
 #### Exercise 4: retrieving long-term memory (the model decides)
 
@@ -226,17 +227,17 @@ Full solution: `./solve 5`
 
 #### Exercise 6: semantic caching, check the cache
 
-A question that was already answered does not need the agent again. Check the cache first, and if a similar question is in it, return that answer straight away.
+A question that was already answered does not need the agent again. Check the cache first, and if a similar question is in it, return that answer straight away. The cache is RedisVL's [semantic cache](https://redis.io/docs/latest/develop/ai/redisvl/user_guide/how_to_guides/llmcache/), in the database from your `REDIS_URL`. It compares the meaning of questions, not their words.
 
-1. **Seed the cache.** Fill the cache with questions and answers, the way the traveler memories were seeded:
+1. **Seed the cache.** Fill the cache with answers to 15 questions about popular places (Goa, Bali, Paris, New York and more), the way the traveler memories were seeded. Each answer comes with its place cards:
 
    ```bash
-   uv run python scripts/seed_cache.py
+   uv run python scripts/seed_semantic_cache.py
    ```
-2. **Step A.** Look a question up in the cache, so that a question with a similar meaning finds the stored answer.
+2. **Step A.** Look a question up in the cache, so that a question with a similar meaning finds the stored answer and its cards. How close counts as similar is the `DISTANCE_THRESHOLD` in `ai/semantic_cache/public_cache.py`: the lower it is, the stricter the match.
 
    Skip ahead with the solution: `./solve 6a`
-3. **Step B.** Write `check_cache` and put it first in the graph. On a hit the graph ends there, and on a miss it goes on to the agent. Ask a seeded question in different words, and see the agent skipped.
+3. **Step B.** Write `check_cache` and put it first in the graph. On a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?". The answer comes back in about three seconds with its cards, marked **From the semantic cache**, and the agent never runs. Every question is looked up, but only a first question is kept (exercise 7), so the cache holds only questions that make sense on their own.
 
    Skip ahead with the solution: `./solve 6b`
 
@@ -246,10 +247,12 @@ Full solution: `./solve 6`
 
 Let the cache fill itself. After the agent answers, keep the question and its answer for the next traveler.
 
-1. **Step A.** Store a question together with its answer in the cache.
+1. **Step A.** Store a question together with its answer in the cache. The cards go along with it, in the entry's `metadata`.
 
    Skip ahead with the solution: `./solve 7a`
-2. **Step B.** Write `store_in_cache` and add it after `agent`. Ask a new question twice, in different words. The second time comes from the cache.
+2. **Step B.** Write `store_in_cache` and add it after `agent`. Log in with a new name, so there are no memories, and ask "What are the best places to visit in Lisbon?". It takes a while, because the agent runs. Then start a new session and ask "Top attractions in Lisbon": the second one comes from the cache.
+
+   Not every answer is kept. An answer with the weather, one written with a traveler's memories, one without places and one to a follow-up are left out, because they are not true for everyone.
 
    Skip ahead with the solution: `./solve 7b`
 

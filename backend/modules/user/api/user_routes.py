@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
-from backend.modules.user.data.profile_repository import find_long_term_memories_by_user_id
+from backend.modules.ai import find_long_term_memories_by_user_id
 
 user_router = APIRouter(prefix="/api/user")
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>How the workshop app fits together</title>
+    <title>Exercise Map for Workshop: Reuse Knowledge for Agentic AI</title>
     <link rel="icon" type="image/png" href="/icons/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" />
@@ -116,6 +116,11 @@
             pointer-events: none;
         }
         .tooltip strong { display: block; margin-bottom: 0.1875rem; font-size: 0.875rem; color: var(--navy); }
+        .tooltip .state-line { display: block; margin-top: 0.375rem; }
+        .tooltip code { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--navy); }
+        .tooltip.state { max-width: 25rem; }        .tooltip .state-row { display: flex; justify-content: space-between; gap: 1.25rem; margin-top: 0.25rem; }
+        .tooltip .state-row .note { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--muted); text-align: right; }
+        .tooltip .state-row.later { opacity: 0.45; }
     </style>
 
     <!-- The styles of the diagram. Plain classes, so the same rules work when the SVG is opened on its own. -->
@@ -138,7 +143,8 @@
         .exercise .box { fill: #ffffff; stroke: var(--accent); stroke-width: 2; }
         .chip .box { fill: #ffffff; stroke: var(--chip-line); stroke-width: 1.3; }
         .exercise.chip .box { stroke: var(--accent); }
-        .frame { fill: none; stroke: var(--graph); stroke-width: 2; stroke-dasharray: 7 6; }
+        .frame { fill: none; stroke: var(--graph); stroke-width: 1.5; }
+        .frame.hovered { stroke-width: 2.6; }
 
         .title { font-family: var(--font-sans); font-weight: 700; font-size: 16px; fill: var(--navy); text-anchor: middle; }
         .title.left { text-anchor: start; }
@@ -225,8 +231,7 @@
     </section>
 
     <figure>
-        <svg id="diagram" viewBox="0 20 1500 860" role="group" aria-labelledby="diagram-title" aria-describedby="diagram-description" xmlns="http://www.w3.org/2000/svg">
-            <title id="diagram-title">How one message moves through the workshop app</title>
+        <svg id="diagram" viewBox="0 20 1500 860" role="group" aria-label="How one message moves through the workshop app" aria-describedby="diagram-description" xmlns="http://www.w3.org/2000/svg">
             <desc id="diagram-description">A browser talks to a FastAPI server. The server runs a LangGraph graph made of an agent, its tools and, as the exercises are solved, memory and cache steps. The memory steps and tools use agent memory, and the cache steps use a semantic cache. Both are kept in Redis. Pieces that are not built yet are greyed out.</desc>
             <defs>
                 <marker id="arrow-red" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
@@ -240,7 +245,7 @@
             <!-- The LangGraph frame sits behind everything inside it -->
             <rect class="frame" x="490" y="150" width="830" height="450" rx="20" />
             <image role="img" aria-label="LangGraph" href="icons/langgraph-logo-dark.svg" x="1177" y="162" width="123" height="26" />
-            <text class="label" x="1300" y="196" text-anchor="end">graph.py</text>
+            <text class="label" x="1300" y="204" text-anchor="end">index.py, graph.py</text>
 
 
             <!-- ========== Nodes ========== -->
@@ -256,7 +261,7 @@
             </g>
 
             <!-- Server -->
-            <g class="node" tabindex="0" data-info="The web server. POST /api/chat runs one turn: it passes the relevant message(s) to the AI agent and streams the response back to the page.">
+            <g class="node" tabindex="0" data-info="The web server. POST /api/chat runs one turn: it passes the message to the AI agent and streams the response back to the page.">
                 <rect class="box" x="200" y="250" width="180" height="150" rx="10" />
                 <image aria-hidden="true" href="icons/fastapi-logo.svg" x="235" y="269" width="40" height="40" />
                 <rect class="icon" x="291" y="266" width="54" height="13" rx="3" />
@@ -272,7 +277,7 @@
             </g>
 
             <!-- Check cache (exercise 6) -->
-            <g class="node exercise" tabindex="0" data-step="cache" data-ex="6" data-info="Exercise 6. First of all, look for a similar question that was already answered. On a hit, the reply goes straight back and the rest of the graph is skipped.">
+            <g class="node exercise" tabindex="0" data-step="cache" data-ex="6" data-info="Exercise 6. First of all, look for a similar question that was already answered. On a hit, the reply goes straight back and the rest of the graph is skipped." data-reads="messages" data-writes="messages, attachments, is_cache_hit" data-writes-when="on a hit">
                 <rect class="box" x="535" y="285" width="100" height="80" rx="8" />
                 <text class="title step" x="585" y="322">Check</text>
                 <text class="title step" x="585" y="341">cache</text>
@@ -282,7 +287,7 @@
             </g>
 
             <!-- Retrieve memories (exercise 5) -->
-            <g class="node exercise" tabindex="0" data-step="retrieve" data-ex="5" data-info="Exercise 5. Before the agent runs, the code looks up what we remember about the traveler and puts it in the prompt.">
+            <g class="node exercise" tabindex="0" data-step="retrieve" data-ex="5" data-info="Exercise 5. Before the agent runs, the code looks up what we remember about the traveler and puts it in the prompt." data-reads="messages, user_id" data-writes="long_term_memories">
                 <rect class="box" x="665" y="285" width="100" height="80" rx="8" />
                 <text class="title step" x="715" y="322">Retrieve</text>
                 <text class="title step" x="715" y="341">memories</text>
@@ -292,7 +297,7 @@
             </g>
 
             <!-- Agent -->
-            <g class="node" tabindex="0" data-step="agent" data-info="One model call. System instructions, any relevant memories and the conversation context are passed to the model, which then decides whether to answer or to run a tool.">
+            <g class="node" tabindex="0" data-step="agent" data-info="One model call. System instructions, any relevant memories and the conversation context are passed to the model, which then decides whether to answer or to run a tool." data-reads="messages, long_term_memories, conversation_summary" data-writes="messages">
                 <rect class="box" x="805" y="277" width="160" height="96" rx="10" />
                 <g transform="translate(885 304)">
                     <path class="icon accent-fill" d="M-4 -14 C-2 -5 1 -2 10 0 C1 2 -2 5 -4 14 C-6 5 -9 2 -18 0 C-9 -2 -6 -5 -4 -14 Z" />
@@ -305,8 +310,8 @@
                 <text class="badge-n" x="960" y="281.5">2</text></g>
             </g>
 
-            <!-- Store in cache (exercise 6) -->
-            <g class="node exercise" tabindex="0" data-step="store" data-ex="7" data-info="Exercise 7. After a reply that came from the agent, store it, so the next similar question can be answered without a model call.">
+            <!-- Store in cache (exercise 7) -->
+            <g class="node exercise" tabindex="0" data-step="store" data-ex="7" data-info="Exercise 7. After a reply that came from the agent, store it, so the next similar question can be answered without a model call." data-reads="messages, attachments" data-writes="">
                 <rect class="box" x="1010" y="285" width="140" height="80" rx="8" />
                 <text class="title step" x="1080" y="322">Store in</text>
                 <text class="title step" x="1080" y="341">cache</text>
@@ -323,7 +328,7 @@
             </g>
 
             <!-- Tools: the memory tools are yours, the Google Maps tools come from Google's MCP server -->
-            <g class="node" tabindex="0" data-step="tools" data-info="The tools the agent can call. The two memory tools are yours to write. Google's come from its MCP server.">
+            <g class="node" tabindex="0" data-step="tools" data-info="The tools the agent can call. The two memory tools are yours to write. Google's come from its MCP server." data-reads="messages" data-writes="messages, attachments">
                 <rect class="box" x="700" y="420" width="486" height="160" rx="8" />
                 <text class="title left step" x="716" y="441">Tools</text>
                 <g class="badge-wrap"><circle class="badge" cx="1176" cy="420" r="12" />
@@ -372,30 +377,31 @@
             <!-- Agent memory: its name sits at the side, so the box stays short -->
             <g class="node" tabindex="0" data-info="The service that holds the session and the long-term memories, and extracts facts from sessions by itself.">
                 <rect class="box external" x="340" y="640" width="680" height="95" rx="14" />
-                <image aria-hidden="true" href="icons/favicon.png" x="356" y="671" width="32" height="32" />
-                <text class="title left heading" x="400" y="680">Agent</text>
-                <text class="title left heading" x="400" y="704">memory</text>
+                <image aria-hidden="true" href="icons/favicon.png" x="589" y="663" width="32" height="32" />
+                <text class="title left heading" x="633" y="672">Agent</text>
+                <text class="title left heading" x="633" y="696">memory</text>
             </g>
             <g class="node exercise" tabindex="0" data-ex="2" data-info="The conversation so far, kept for as long as the session lasts. The service can summarize it when it gets long.">
-                <rect class="box" x="515" y="650" width="200" height="75" rx="8" />
-                <text class="title card" x="615" y="678">Session memory</text>
-                <text class="sub" x="615" y="694">working memory</text>
-                <text class="file" x="615" y="711">conversation_repository.py</text>
+                <rect class="box" x="355" y="650" width="200" height="75" rx="8" />
+                <text class="title card" x="455" y="678">Session memory</text>
+                <text class="sub" x="455" y="694">working memory</text>
+                <text class="file" x="455" y="711">session_memory.py</text>
             </g>
             <g class="node exercise" tabindex="0" data-ex="3" data-info="Facts that outlive a conversation: preferences and trips, found again by meaning.">
                 <rect class="box" x="745" y="650" width="260" height="75" rx="8" />
                 <text class="title card" x="875" y="678">Long-term memory</text>
                 <text class="sub" x="875" y="694">preferences and past trips</text>
-                <text class="file" x="875" y="711">profile_repository.py</text>
+                <text class="file" x="875" y="711">long_term_memory.py</text>
             </g>
 
             <!-- Semantic cache -->
             <g class="node exercise" tabindex="0" data-ex="6" data-info="Exercise 6. Stores earlier questions together with the answers they received. A new question with a similar meaning can reuse a stored answer.">
                 <rect class="box" x="1120" y="640" width="200" height="95" rx="14" />
-                <image aria-hidden="true" href="icons/playbooks-icon.png" x="1132" y="669" width="38" height="38" />
-                <text class="title left card" x="1178" y="684">Semantic cache</text>
-                <text class="sub left" x="1178" y="700">similar questions</text>
-                <text class="sub left" x="1178" y="714">and their answers</text>
+                <image aria-hidden="true" href="icons/playbooks-icon.png" x="1132" y="665" width="38" height="38" />
+                <text class="title left card" x="1178" y="676">Semantic cache</text>
+                <text class="sub left" x="1178" y="692">similar questions</text>
+                <text class="sub left" x="1178" y="706">and their answers</text>
+                <text class="file left" x="1178" y="722">public_cache.py</text>
             </g>
 
             <!-- Redis, under both -->
@@ -412,24 +418,19 @@
             <text class="label" x="175" y="296" text-anchor="middle">message</text>
             <text class="label" x="175" y="374" text-anchor="middle">events</text>
 
-            <!-- The server calls the graph with the message (and the conversation, from exercise 2), and the graph answers -->
-            <g class="edge flow"><path d="M380 300 H481" marker-end="url(#arrow)" /></g>
-            <text class="label" x="435" y="294" text-anchor="middle" data-hide-from="2">message</text>
-            <g data-show-from="2">
-                <text class="label" x="435" y="266" text-anchor="middle">message +</text>
-                <text class="label" x="435" y="278" text-anchor="middle">conversation</text>
-                <text class="label" x="435" y="290" text-anchor="middle">history</text>
-            </g>
-            <g class="edge flow"><path d="M499 350 H380" marker-end="url(#arrow)" /></g>
-            <text class="label" x="435" y="366" text-anchor="middle">agent</text>
-            <text class="label" x="435" y="378" text-anchor="middle">response</text>
+            <!-- The server calls the agent with the message, and the agent answers -->
+            <g class="edge flow"><path d="M380 292 H474" marker-end="url(#arrow)" /></g>
+            <text class="label" x="437" y="286" text-anchor="middle">message</text>
+            <g class="edge flow"><path d="M506 372 H380" marker-end="url(#arrow)" /></g>
+            <text class="label" x="437" y="350" text-anchor="middle">agent</text>
+            <text class="label" x="437" y="362" text-anchor="middle">response</text>
 
             <!-- Where the message enters the graph and where the reply leaves it, on the frame itself -->
-            <g class="node" tabindex="0" data-info="Start: where the message enters the graph.">
-                <circle class="box" cx="490" cy="300" r="8" />
+            <g class="node" tabindex="0" data-info="Start: where the message enters the graph, with the conversation so far.">
+                <circle class="box" cx="490" cy="300" r="17" />
             </g>
-            <g class="node" tabindex="0" data-info="End: where the graph ends and the reply goes back to the server.">
-                <circle class="box" cx="490" cy="350" r="8" />
+            <g class="node" tabindex="0" data-info="End: where the graph ends. The reply goes back to the server, and the turn is saved to the session.">
+                <circle class="box" cx="490" cy="380" r="17" />
             </g>
 
             <!-- Inside the graph -->
@@ -453,13 +454,14 @@
             <g class="edge flow"><path d="M1395 115 V510 H1281 q-11 -12 -22 0 H1231 q-11 -12 -22 0 H1174" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
             <text class="label" x="1407" y="250">MCP</text>
 
-            <!-- Into agent memory: from the server, and from each tool and the retrieve step -->
-            <g class="edge flow exercise-edge" data-ex="2"><path d="M290 400 V620 H615 V650" marker-start="url(#arrow-red)" marker-end="url(#arrow-red)" /></g>
-            <text class="label" x="302" y="540" data-ex="2">save and read</text>
+            <!-- Into agent memory: the session is read into Start and saved from End, and each tool and the retrieve step use long-term memory -->
+            <g class="edge flow exercise-edge" data-ex="2"><path d="M402 650 V383 q-11 -11 0 -22 V308 H474" marker-end="url(#arrow-red)" /></g>
+            <text class="label" x="394" y="520" text-anchor="end" data-ex="2">conversation history</text>
+            <g class="edge flow exercise-edge" data-ex="2"><path d="M475 388 H448 V650" marker-end="url(#arrow-red)" /></g>
             <g class="edge flow exercise-edge" data-ex="3"><path d="M790 542 V650" marker-end="url(#arrow-red)" /></g>
             <g class="edge flow exercise-edge" data-ex="4"><path d="M960 650 V542" marker-end="url(#arrow-red)" /></g>
             <g class="edge flow exercise-edge" data-ex="5"><path d="M765 650 V620 H685 V365" marker-end="url(#arrow-red)" /></g>
-            <g class="edge flow exercise-edge" data-ex="3"><path d="M715 687 H745" marker-end="url(#arrow-red)" /></g>
+            <g class="edge flow exercise-edge" data-ex="3"><path d="M555 715 H745" marker-end="url(#arrow-red)" /></g>
 
             <!-- Both go to Redis -->
             <g class="edge flow"><path d="M990 735 V795" marker-start="url(#arrow)" marker-end="url(#arrow)" /></g>
@@ -469,8 +471,8 @@
             <p class="legend-title" id="legend-title">Legend</p>
             <ul aria-labelledby="legend-title">
                 <li><i class="swatch"></i> Already in the app</li>
-                <li><i class="swatch exercise"></i> Built by you in an exercise</li>
                 <li><i class="swatch not-built"></i> Not built yet</li>
+                <li><i class="swatch exercise"></i> Built by you in an exercise</li>
             </ul>
         </figcaption>
     </figure>
@@ -486,7 +488,7 @@
         },
         2: {
             title: 'Exercise 2 · Working memory',
-            text: 'The server saves each turn to the session and reads it back before every model call, so the agent sees the conversation so far.',
+            text: 'The agent loads the session before the graph runs, so every step sees the conversation so far. When the graph ends, it saves the turn.',
         },
         3: {
             title: 'Exercise 3 · Storing long-term memory',
@@ -552,14 +554,6 @@
             if (lit) badge.querySelector('.badge-n').textContent = ++number;
         }
 
-        // Labels that change with the exercise
-        document.querySelectorAll('#diagram [data-hide-from]').forEach((element) => {
-            element.toggleAttribute('hidden', stage >= Number(element.dataset.hideFrom));
-        });
-        document.querySelectorAll('#diagram [data-show-from]').forEach((element) => {
-            element.toggleAttribute('hidden', stage < Number(element.dataset.showFrom));
-        });
-
         stageButtons.forEach((button) => {
             const buttonStage = Number(button.dataset.stage);
             if (buttonStage === stage) button.setAttribute('aria-current', 'step');
@@ -589,11 +583,32 @@
     // Pointing at a piece, or tabbing to it, says what it is in a tooltip next to it. The text at the top stays as it is.
     const tooltip = document.getElementById('tooltip');
 
+    // "Reads: messages, user_id" and "Writes: ...", one line each, with the field names in the same mono font as the state card
+    function stateLines(element) {
+        const lines = [];
+        for (const [label, names] of [['Reads', element.dataset.reads], [`Writes${element.dataset.writesWhen ? ` (${element.dataset.writesWhen})` : ''}`, element.dataset.writes]]) {
+            if (names === undefined) continue;
+            const line = document.createElement('span');
+            line.className = 'state-line';
+            line.append(`${label}: `);
+            if (names === '') line.append('nothing');
+            names.split(', ').filter(Boolean).forEach((name, index) => {
+                if (index > 0) line.append(', ');
+                const code = document.createElement('code');
+                code.textContent = name;
+                line.append(code);
+            });
+            lines.push(line);
+        }
+        return lines;
+    }
+
     function showTooltip(element) {
         const exercise = element.dataset.ex ? `Exercise ${element.dataset.ex}` : 'Already in the app';
         const heading = document.createElement('strong');
         heading.textContent = exercise;
-        tooltip.replaceChildren(heading, element.dataset.info);
+        tooltip.replaceChildren(heading, element.dataset.info, ...stateLines(element));
+        tooltip.classList.remove('state');
         tooltip.hidden = false;
         element.setAttribute('aria-describedby', tooltip.id);
 
@@ -621,6 +636,72 @@
         element.addEventListener('blur', () => hideTooltip(element));
     });
     window.addEventListener('scroll', () => hideTooltip(), { passive: true });
+
+    // The graph state: a tooltip that follows the pointer while it is over the graph, in a place where no step is.
+    // A step has its own tooltip. The short delay keeps this one from flashing when the pointer crosses the edge of a step.
+    const STATE_FIELDS = [
+        { name: 'user_id', note: 'who is asking', from: 1 },
+        { name: 'session_id', note: 'which conversation', from: 1 },
+        { name: 'messages', note: 'appends', from: 1 },
+        { name: 'attachments', note: 'appends', from: 1 },
+        { name: 'conversation_summary', note: 'older turns', from: 2 },
+        { name: 'long_term_memories', note: 'what we know', from: 5 },
+        { name: 'is_cache_hit', note: 'from the cache', from: 6 },
+    ];
+    const diagram = document.getElementById('diagram');
+    const graphFrame = diagram.querySelector('.frame');
+    let stateTimer;
+
+    function showStateTooltip(x, y) {
+        const heading = document.createElement('strong');
+        heading.textContent = 'Graph state';
+        const rows = STATE_FIELDS.map((field) => {
+            const row = document.createElement('span');
+            row.className = 'state-row';
+            row.classList.toggle('later', stage < field.from);
+            const code = document.createElement('code');
+            code.textContent = field.name;
+            const note = document.createElement('span');
+            note.className = 'note';
+            note.textContent = stage < field.from ? `from exercise ${field.from}` : field.note;
+            row.append(code, note);
+            return row;
+        });
+        tooltip.replaceChildren(heading, 'What the graph carries through one turn. Every step can read all of it and returns only what it changes. messages and attachments add to what is there, the other fields are replaced.', ...rows);
+        tooltip.classList.add('state');
+        graphFrame.classList.add('hovered');
+        tooltip.hidden = false;
+        const card = tooltip.getBoundingClientRect();
+        const margin = 12;
+        const left = Math.min(x + 16, window.innerWidth - card.width - margin);
+        const top = y + 16 + card.height > window.innerHeight - margin ? y - card.height - 16 : y + 16;
+        tooltip.style.left = `${Math.max(left, margin)}px`;
+        tooltip.style.top = `${Math.max(top, margin)}px`;
+    }
+
+    function hideStateTooltip() {
+        clearTimeout(stateTimer);
+        stateTimer = undefined;
+        graphFrame.classList.remove('hovered');
+        if (tooltip.classList.contains('state')) {
+            tooltip.classList.remove('state');
+            tooltip.hidden = true;
+        }
+    }
+
+    diagram.addEventListener('pointermove', (event) => {
+        const area = graphFrame.getBoundingClientRect();
+        const insideGraph = event.clientX >= area.left && event.clientX <= area.right && event.clientY >= area.top && event.clientY <= area.bottom;
+        const overStep = event.target.closest('[data-info]') !== null;
+        if (!insideGraph || overStep) return hideStateTooltip();
+        if (tooltip.classList.contains('state')) return showStateTooltip(event.clientX, event.clientY);
+        if (stateTimer) return;
+        stateTimer = setTimeout(() => {
+            stateTimer = undefined;
+            showStateTooltip(event.clientX, event.clientY);
+        }, 100);
+    });
+    diagram.addEventListener('pointerleave', hideStateTooltip);
 
     render(1);
 </script>

@@ -9,12 +9,12 @@ function toLabel(name) {
 /** The box under a reply: how long it took and what it used. Its markup is the response-info template. */
 export class ResponseInfo {
     /**
-     * @param {{usage: {inputTokens: number, outputTokens: number, totalTokens: number, inputTokenDetails: Object, outputTokenDetails: Object}, responseTime: number, cached: boolean}} details
+     * @param {{usage: {inputTokens: number, outputTokens: number, totalTokens: number, inputTokenDetails: Object, outputTokenDetails: Object}, responseTime: number, isCacheHit: boolean}} details
      */
-    constructor({ usage, responseTime, cached }) {
+    constructor({ usage, responseTime, isCacheHit }) {
         this.usage = usage;
         this.responseTime = responseTime;
-        this.cached = cached;
+        this.isCacheHit = isCacheHit;
     }
 
     createElement() {
@@ -23,8 +23,8 @@ export class ResponseInfo {
 
         footer.querySelector('.response-time').textContent = `${this.responseTime.toFixed(1)}s`;
         footer.querySelector('.token-total').textContent = `${totalTokens.toLocaleString()} tokens`;
-        footer.querySelector('.cached-badge').hidden = !this.cached;
-        footer.querySelector('.cached-message').hidden = !this.cached;
+        footer.querySelector('.cached-badge').hidden = !this.isCacheHit;
+        footer.querySelector('.cached-message').hidden = !this.isCacheHit;
         footer.querySelector('.no-model-calls-message').hidden = totalTokens !== 0;
 
         const detailRows = (counts) => Object.entries(counts ?? {}).map(([name, value]) => [toLabel(name), value.toLocaleString()]);

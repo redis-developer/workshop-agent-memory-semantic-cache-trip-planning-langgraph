@@ -14,7 +14,9 @@
 from typing import Literal, TypedDict
 from uuid import uuid4
 
-from backend.lib.agent_memory_client import get_agent_memory
+from redis_agent_memory.models import BulkCreateLongTermMemoriesResponseContent
+
+from backend.modules.ai.agent_memory.client import agent_memory
 from backend.lib.log import log
 
 # What kind of thing an entry is:
@@ -40,13 +42,14 @@ ENTRIES_PER_SEARCH = 5
 
 
 # %%
-async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> None:
-    """Add one entry to a traveler's profile."""
+async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> BulkCreateLongTermMemoriesResponseContent:
+    """Add one entry to a traveler's profile. Returns what Agent Memory answered: the ids it created, and any errors."""
     topics = topics or []
-    await get_agent_memory().bulk_create_long_term_memories_async(
+    response = await agent_memory.bulk_create_long_term_memories_async(
         memories=[{"memory_id": str(uuid4()), "text": text, "owner_id": user_id, "memory_type": memory_type, **({"topics": topics} if topics else {})}]
     )
     log(f"💾 {memory_type} memory saved for {user_id}")
+    return response
 
 
 # %% [markdown]
@@ -66,7 +69,7 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
         **({"owner_id": {"eq": user_id}} if user_id else {}),
         **({"memory_type": {"eq": memory_type}} if memory_type else {}),
     }
-    result = await get_agent_memory().search_long_term_memory_async(
+    result = await agent_memory.search_long_term_memory_async(
         request={"query": query, "limit": limit, **({"filter_": {**filter_, "op": "ALL"}} if filter_ else {})}
     )
     entries: list[ProfileEntry] = [

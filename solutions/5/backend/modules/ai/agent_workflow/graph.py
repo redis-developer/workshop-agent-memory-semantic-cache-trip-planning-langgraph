@@ -14,7 +14,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from backend.modules.ai.agent_workflow.nodes import agent, retrieve_memories, tools
 from backend.modules.ai.agent_workflow.state import AgentState
-from backend.modules.ai.agent_workflow.utils import add_cards
+from backend.modules.ai.agent_workflow.tools.middleware import process_tool_call
 
 
 def build_graph():
@@ -27,7 +27,7 @@ def build_graph():
         StateGraph(AgentState)
         .add_node("retrieve_memories", retrieve_memories)  # Exercise 5 (solved)
         .add_node("agent", agent)
-        .add_node("tools", ToolNode(tools, awrap_tool_call=add_cards))  # the tools node: runs the tools the model asked for, and adds the cards they found
+        .add_node("tools", ToolNode(tools, awrap_tool_call=process_tool_call))  # the tools node: runs the tools the model asked for, and adds the cards they found
         .add_edge(START, "retrieve_memories")  # Exercise 5 (solved)
         .add_edge("retrieve_memories", "agent")  # Exercise 5 (solved)
         .add_conditional_edges("agent", tools_condition, ["tools", END])

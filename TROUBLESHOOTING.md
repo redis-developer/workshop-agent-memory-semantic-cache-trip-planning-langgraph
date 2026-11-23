@@ -35,7 +35,7 @@ Look at the terminal the server runs in. It prints one line for each step the ag
 
 **A new memory does not show in the Memory tab**
 
-The service reads each conversation and extracts memories on its own, after the turn, on the extraction cadence you set. Give it a minute and refresh. `save_memory` writes straight away, so a fact saved with it appears at once.
+The service reads each conversation and extracts memories on its own, after the turn, on the extraction cadence you set. Give it about 5 minutes and refresh. `save_memory` writes straight away, so a fact saved with it appears at once.
 
 **The agent mentions things you never said**
 

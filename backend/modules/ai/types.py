@@ -1,11 +1,14 @@
 """
-Content that comes with a reply, for the page to render next to the chat. The type says what is in data.
-The agent adds them from what its tools found, and the page draws them on the canvas.
-
-The keys are the JSON the page reads, which is why they are in camelCase.
+Types that more than one part of the agent uses. A type that only one file uses stays in that file.
 """
 
 from typing import Literal, NotRequired, TypedDict
+
+
+# ── Attachments ──────────────────────────────────────────────────────────────
+# Content that comes with a reply, for the page to render next to the chat. The type says what is in data.
+# The agent adds them from what its tools found, and the page draws them on the canvas.
+# The keys are the JSON the page reads, which is why they are in camelCase.
 
 
 class PlaceCard(TypedDict):

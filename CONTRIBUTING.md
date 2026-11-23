@@ -25,7 +25,19 @@ When what you are building is covered by an official skill, load it and follow i
 
 ### Structure
 
-Each feature is a folder in `backend/modules/` with up to three layers. `api/` holds the routes, `domain/` holds the logic, and `data/` holds the calls to Redis Agent Memory. The agent has its own module, `ai/agent_workflow/`: `graph.py` connects the steps, `nodes.py` holds what each step does, and `tools/` holds what the model can call. Routes and tools stay thin and hand the real work to the domain and data layers.
+Everything about the agent is in `backend/modules/ai/`:
+
+- `agent_workflow/`:
+  - `graph.py` connects the steps.
+  - `nodes.py` holds what each step does.
+  - `tools/` holds what the model can call.
+  - `index.py` runs one turn.
+- `agent_memory/` is Redis Agent Memory.
+- `semantic_cache/` is the RedisVL cache.
+- `providers/` is the model.
+- `types.py` has the types that more than one file uses.
+
+Code outside `ai/` imports from `backend.modules.ai`, whose `__init__.py` lists what it may use. Files inside `ai/` import each other by their full path. `chat/` and `user/` hold the routes. Routes stay thin and hand the real work to `ai/`.
 
 ### Code style
 
@@ -39,10 +51,6 @@ Each feature is a folder in `backend/modules/` with up to three layers. `api/` h
 The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. The files in the repository are the **starter**: each step a participant writes is a stub with a `# TODO` and a hint, written so the app still runs without memory. Under each step is a collapsed "Show solution" block (`<details>`) with the finished code. Keep every existing comment when you turn code into a stub.
 
 The finished files are in `solutions/<step>/`, at the same path as in the repository, and `./solve` copies them over. Each one has its step solved and every earlier step in the same file, and its headings say "(solved)". When you change exercise code, update the stub, the "Show solution" block and the file in `solutions/` together, and keep the README exercise and the diagram saying the same thing.
-
-### Seeding
-
-`scripts/seed_agent_memory.py` creates memories for the demo travelers. `--reset` first deletes every memory of those travelers, including the ones the service extracted, then creates them again.
 
 ## The architecture diagram
 

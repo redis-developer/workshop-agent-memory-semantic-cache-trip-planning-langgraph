@@ -93,20 +93,32 @@
 }
 .step {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
 }
 .dot {
     width: 0.5rem;
     height: 0.5rem;
+    margin-top: 0.3rem; /* in line with the first line of the label */
     border-radius: 50%;
     background: var(--border-strong);
+}
+.step-text {
+    display: flex;
+    flex-direction: column;
+}
+.step-info {
+    font-size: 0.6875rem;
+    color: var(--text-soft);
 }
 .step.running .dot {
     background: #e0a818;
 }
 .step.done .dot {
     background: var(--success);
+}
+.step.failed .dot {
+    background: var(--red);
 }
 .step-duration {
     margin-left: auto;
@@ -115,6 +127,9 @@
 }
 .step.done .step-duration {
     color: var(--success);
+}
+.step.failed .step-duration {
+    color: var(--red);
 }
 
 .reply-footer {

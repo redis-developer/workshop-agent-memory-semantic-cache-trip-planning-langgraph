@@ -22,6 +22,7 @@ class Config:
     agent_memory_url = required("IRIS_AGENT_MEMORY_URL")
     agent_memory_store_id = required("IRIS_AGENT_MEMORY_STORE_ID")
     agent_memory_api_key = required("IRIS_AGENT_MEMORY_API_KEY")
+    redis_url = required("REDIS_URL")
 
 
 config = Config()

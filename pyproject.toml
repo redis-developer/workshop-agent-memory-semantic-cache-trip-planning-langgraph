@@ -1,5 +1,5 @@
 [project]
-name = "workshop-agent-memory-playbook-trip-planning-python"
+name = "workshop-agent-memory-semantic-cache-trip-planning-langgraph"
 version = "1.0.0"
 description = "A trip planning agent for learning agent memory with Redis Agent Memory, LangGraph and Google Maps."
 authors = [{ name = "Ashwin Hariharan" }]
@@ -17,6 +17,7 @@ dependencies = [
     "redis-agent-memory>=1.1.0",
     "python-dotenv>=1.0",
     "httpx>=0.27",
+    "redisvl>=0.32.1",
 ]
 
 [dependency-groups]

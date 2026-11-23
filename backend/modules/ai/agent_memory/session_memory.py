@@ -5,21 +5,30 @@
 # writes a summary of the older messages once the conversation gets long (you set when, in the Redis Cloud console).
 #
 # **Exercise 2A (solved)** is the two functions that read the session and add messages to it. Step B is in
-# `domain/chat_service.py`.
+# `ai/agent_workflow/index.py`.
 
 
 # %%
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import Literal, TypedDict
 
 from redis_agent_memory.errors import NotFoundErrorResponseContent
 from redis_agent_memory.models import MessageRole
 
-from backend.lib.agent_memory_client import get_agent_memory
+from backend.modules.ai.agent_memory.client import agent_memory
 from backend.lib.log import log
 
-if TYPE_CHECKING:
-    from backend.modules.chat.domain.chat_service import Conversation, Message
+
+class Message(TypedDict):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class Conversation(TypedDict):
+    messages: list[Message]
+    # What the service wrote about the older part of the conversation. None until there is one...
+    summary: str | None
+
 
 # Who the assistant's messages are from. The traveler's own messages are from the traveler.
 ASSISTANT_ACTOR_ID = "travel-agent"
@@ -30,15 +39,15 @@ ASSISTANT_ACTOR_ID = "travel-agent"
 
 
 # %%
-async def find_conversation_by_session_id(session_id: str) -> "Conversation":
+async def find_conversation_by_session_id(session_id: str) -> Conversation:
     """
     Everything the service still holds for this session: its messages, in order, and a summary of the older ones once
     the conversation got long. A session that does not exist yet is the normal first-turn case, so it gives an empty
     conversation.
     """
     try:
-        session = await get_agent_memory().get_session_memory_async(session_id=session_id)
-        conversation: "Conversation" = {
+        session = await agent_memory.get_session_memory_async(session_id=session_id)
+        conversation: Conversation = {
             "messages": [
                 {
                     "role": "assistant" if event.role == MessageRole.ASSISTANT else "user",
@@ -68,13 +77,13 @@ async def find_conversation_by_session_id(session_id: str) -> "Conversation":
 
 
 # %%
-async def save_message(session_id: str, user_id: str, message: "Message") -> None:
+async def save_message(session_id: str, user_id: str, message: Message) -> None:
     """
     Add one message to the session. The service extracts long-term memories from the session afterwards.
     `actor_id` says who the message is from: the traveler's ID for their messages, and ASSISTANT_ACTOR_ID for the assistant's.
     """
     is_assistant = message["role"] == "assistant"
-    await get_agent_memory().add_session_event_async(
+    await agent_memory.add_session_event_async(
         session_id=session_id,
         actor_id=ASSISTANT_ACTOR_ID if is_assistant else user_id,
         role=MessageRole.ASSISTANT if is_assistant else MessageRole.USER,
@@ -91,5 +100,5 @@ async def save_message(session_id: str, user_id: str, message: "Message") -> Non
 # %%
 async def delete_conversation_by_session_id(session_id: str) -> None:
     """Delete this session, with everything in it."""
-    await get_agent_memory().delete_session_memory_async(session_id=session_id)
+    await agent_memory.delete_session_memory_async(session_id=session_id)
     log(f"🗑️ Session {session_id} deleted")
