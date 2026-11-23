@@ -178,7 +178,7 @@ Right-click an exercise file and choose **Open With → Notebook**. When it asks
 
 ### Exercises
 
-Where to write: look for `# TODO` in the files. The hint above each one says what to do. A TODO of several lines starts with `# TODO start` and ends with `# TODO end`: replace what is between them, the placeholder line included. The graph in `graph.py` is already complete. A step that you have not written yet shows "Not implemented yet" in the Steps panel and changes nothing, so the app runs from the start.
+Where to write: look for `# TODO` in the files.
 
 Stuck? You have two ways to get the solution:
 
@@ -196,7 +196,7 @@ Make the agent remember the conversation so far.
 1. **Step A.** Add each message to the session in Redis Agent Memory, and read the session back.
 
    Skip ahead with the solution: `./solve 2a`
-2. **Step B.** Before each model call, rebuild the prompt from the session, so the model sees the conversation. Ask "which city did I just ask about?" to try it. Then change how much of it the model gets, and watch what it forgets.
+2. **Step B.** Before each model call, put the conversation so far into the prompt. Ask "which city did I just ask about?" to try it. Then change how much of it the model gets, and watch what it forgets.
 
    Skip ahead with the solution: `./solve 2b`
 
@@ -209,7 +209,7 @@ Make a lasting fact outlive the conversation.
 1. **Step A.** Create a long-term memory with its text, its owner (the traveler), a type (semantic for a preference, episodic for something that happened) and topics.
 
    Skip ahead with the solution: `./solve 3a`
-2. **Step B.** Write the `save_memory` tool and give it to the agent, by adding it to the `memory_tools` list at the bottom of its file. Its description tells the model when to use it. Say "I'm vegetarian", then open the **Memory** tab.
+2. **Step B.** Write the `save_memory` tool and give it to the agent, by adding it to the `memory_tools` list at the bottom of its file. Say "I'm vegetarian", then open the **Memory** tab.
 
    Skip ahead with the solution: `./solve 3b`
 
@@ -234,8 +234,8 @@ Full solution: `./solve 4`
 
 Instead of waiting for the model to ask, look up memories before the agent runs, so it has them from the first word.
 
-- Write `retrieve_memories` in `nodes.py`, which searches for what the traveler just said. The graph already runs it before `agent`: until you write it, the Steps panel shows "Not implemented yet". Run the last cell of `graph.py` to draw the graph.
-- Log in as `ashwin`, say "hey", and see what the agent already knows.
+- Write `retrieve_memories` in `nodes.py`, which searches for what the traveler just said.
+- Log in as `ashwin`, say "hey", and see what the agent already knows. Then try logging in as your own user.
 
 Full solution: `./solve 5`
 
@@ -248,25 +248,24 @@ A question that was already answered does not need the agent again. Check the ca
    ```bash
    uv run python scripts/seed_semantic_cache.py
    ```
-2. **Step A.** Look a question up in the cache, so that a question with a similar meaning finds the stored answer and its cards. How close counts as similar is the `DISTANCE_THRESHOLD` in `ai/semantic_cache/public_cache.py`: the lower it is, the stricter the match.
+2. **Step A.** Look a question up in the cache, so that a question with a similar meaning finds the stored answer and its cards.
 
    Skip ahead with the solution: `./solve 6a`
-3. **Step B.** Write `check_cache` in `nodes.py`. The graph already runs it first: on a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?". The answer comes back in about three seconds with its cards, marked **From the semantic cache**, and the agent never runs. Every question is looked up, but only a first question is kept (exercise 7), so the cache holds only questions that make sense on their own.
-
+3. **Step B.** Write `check_cache` in `nodes.py`. On a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?".
    Skip ahead with the solution: `./solve 6b`
 
 Full solution: `./solve 6`
 
 #### Exercise 7: semantic caching, store in the cache
 
-Let the cache fill itself. After the agent answers, keep the question and its answer for the next traveler.
+Let the cache fill itself. After the agent answers, keep the question and its answer to be reused for others.
 
-1. **Step A.** Store a question together with its answer in the cache. The cards go along with it, in the entry's `metadata`.
+1. **Step A.** Store a question together with its answer in the cache.
 
    Skip ahead with the solution: `./solve 7a`
-2. **Step B.** Write `store_in_cache` in `nodes.py`. The graph already runs it after `agent`. Log in with a new name, so there are no memories, and ask "What are the best places to visit in Lisbon?". It takes a while, because the agent runs. Then start a new session and ask "Top attractions in Lisbon": the second one comes from the cache.
+2. **Step B.** Write `store_in_cache` in `nodes.py`. Ask something you haven't asked before, then ask it again: the second answer comes from the cache.
 
-   Not every answer is kept. An answer with the weather, one written with a traveler's memories, one without places and one to a follow-up are left out, because they are not true for everyone.
+   An answer with the weather, one written with a traveler's memories, one without places, or follow-up questions such as "and the second one?" are left out.
 
    Skip ahead with the solution: `./solve 7b`
 
