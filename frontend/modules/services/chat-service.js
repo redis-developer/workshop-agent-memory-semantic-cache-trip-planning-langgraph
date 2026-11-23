@@ -1,8 +1,8 @@
 import { getJson } from './http.js';
 
 /** What the service holds for one conversation: { messageCount, summary }. */
-export function fetchSession(sessionId) {
-    return getJson(`/api/chat/session?sessionId=${encodeURIComponent(sessionId)}`);
+export function fetchSession(userId, sessionId) {
+    return getJson(`/api/chat/session?userId=${encodeURIComponent(userId)}&sessionId=${encodeURIComponent(sessionId)}`);
 }
 
 /**

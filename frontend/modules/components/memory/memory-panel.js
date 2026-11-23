@@ -26,7 +26,7 @@ export class MemoryPanel {
         let session;
         let profile;
         try {
-            [session, profile] = await Promise.all([fetchSession(sessionId), fetchProfile(userId)]);
+            [session, profile] = await Promise.all([fetchSession(userId, sessionId), fetchProfile(userId)]);
         } catch (error) {
             this.error.textContent = `Could not read memory: ${error.message}`;
             this.error.hidden = false;

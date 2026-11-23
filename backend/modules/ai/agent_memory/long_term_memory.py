@@ -14,7 +14,7 @@
 from typing import Literal, TypedDict
 from uuid import uuid4
 
-from redis_agent_memory.models import BulkCreateLongTermMemoriesResponseContent
+from redis_iris.agent_memory import models
 
 from backend.modules.ai.agent_memory.client import agent_memory
 from backend.lib.log import log
@@ -40,16 +40,16 @@ ENTRIES_PER_SEARCH = 5
 # %% [markdown]
 # ## Exercise 3A: create a long-term memory
 #
-# **What to do:** create one long-term memory with `bulk_create_long_term_memories_async`.
+# **What to do:** create one long-term memory with `agent_memory.client.bulk_create_long_term_memories_async`.
 #
 # - Every entry has an owner (the traveler), a type (semantic or episodic) and topics, and a new id of your own.
 
 
 # %%
-async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> BulkCreateLongTermMemoriesResponseContent:
+async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> models.BulkCreateLongTermMemoriesResponseContent:
     """Add one entry to a traveler's profile. Returns what Agent Memory answered: the ids it created, and any errors."""
 
-    # TODO start (Exercise 3A): create the entry with `agent_memory.bulk_create_long_term_memories_async(memories=[{...}])`.
+    # TODO start (Exercise 3A): create the entry with `agent_memory.client.bulk_create_long_term_memories_async(memories=[{...}])`.
     # Each memory has a `memory_id` (a new uuid), its `text`, the `owner_id`, the `memory_type`, and `topics` if there are any.
     # Return what the service answered. Until you write this, the agent cannot save anything.
 
@@ -63,11 +63,11 @@ async def create_long_term_memory(*, user_id: str, text: str, memory_type: Memor
 # <summary>Show solution</summary>
 #
 # ```python
-# async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> BulkCreateLongTermMemoriesResponseContent:
+# async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> models.BulkCreateLongTermMemoriesResponseContent:
 #     """Add one entry to a traveler's profile. Returns what Agent Memory answered: the ids it created, and any errors."""
 #
 #     topics = topics or []
-#     response = await agent_memory.bulk_create_long_term_memories_async(
+#     response = await agent_memory.client.bulk_create_long_term_memories_async(
 #         memories=[{"memory_id": str(uuid4()), "text": text, "owner_id": user_id, "memory_type": memory_type, **({"topics": topics} if topics else {})}]
 #     )
 #     log(f"💾 {memory_type} memory saved for {user_id}")
@@ -80,23 +80,23 @@ async def create_long_term_memory(*, user_id: str, text: str, memory_type: Memor
 # %% [markdown]
 # ## Exercise 4A: search long-term memory
 #
-# **What to do:** search the traveler's memories with `search_long_term_memory_async`, and return them as entries.
+# **What to do:** search the traveler's memories with `agent_memory.arecall`, and return them as entries.
 #
-# Entries are found by meaning, not by keyword. With a `user_id` the search only looks in that traveler's entries.
-# Without one it looks in everyone's. With a `memory_type` it only looks at that type of entry.
+# Entries are found by meaning, not by keyword. The search only looks in that traveler's entries. With a `memory_type`
+# it only looks at that type of entry.
 #
-# - The request has the `query`, a `limit` and, to narrow it, a `filter_`: `{"owner_id": {"eq": ...}, "memory_type": {"eq": ...}, "op": "ALL"}`.
-# - Each item of `result.items` has `memory_id`, `text`, `memory_type` and `topics`.
+# - `await agent_memory.arecall(query, owner=user_id, types=[...], limit=...)` returns a `Recall`. Leave `types` empty to look at every type.
+# - Each item of `recall.memories` has `id`, `text`, `memory_type` and `topics`.
 
 
 # %%
-async def search_long_term_memory(*, query: str, user_id: str | None = None, memory_type: MemoryType | None = None, limit: int = ENTRIES_PER_SEARCH) -> list[ProfileEntry]:
+async def search_long_term_memory(*, query: str, user_id: str, memory_type: MemoryType | None = None, limit: int = ENTRIES_PER_SEARCH) -> list[ProfileEntry]:
     """
-    Search long-term memories by meaning. With a `user_id` it only looks in that traveler's entries, and with a
-    `memory_type` it only looks at that type. It returns the closest entries, at most `limit`.
+    Search a traveler's long-term memories by meaning. With a `memory_type` it only looks at that type.
+    It returns the closest entries, at most `limit`.
     """
 
-    # TODO start (Exercise 4A): search with `agent_memory.search_long_term_memory_async(request={...})`.
+    # TODO start (Exercise 4A): search with `await agent_memory.arecall(query, owner=user_id, types=[...], limit=limit)`.
     # Return the entries as a list of ProfileEntry (see the top of this file).
     # Until you write this, the agent finds nothing.
 
@@ -110,22 +110,16 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
 # <summary>Show solution</summary>
 #
 # ```python
-# async def search_long_term_memory(*, query: str, user_id: str | None = None, memory_type: MemoryType | None = None, limit: int = ENTRIES_PER_SEARCH) -> list[ProfileEntry]:
+# async def search_long_term_memory(*, query: str, user_id: str, memory_type: MemoryType | None = None, limit: int = ENTRIES_PER_SEARCH) -> list[ProfileEntry]:
 #     """
-#     Search long-term memories by meaning. With a `user_id` it only looks in that traveler's entries, and with a
-#     `memory_type` it only looks at that type. It returns the closest entries, at most `limit`.
+#     Search a traveler's long-term memories by meaning. With a `memory_type` it only looks at that type.
+#     It returns the closest entries, at most `limit`.
 #     """
 #
-#     filter_ = {
-#         **({"owner_id": {"eq": user_id}} if user_id else {}),
-#         **({"memory_type": {"eq": memory_type}} if memory_type else {}),
-#     }
-#     result = await agent_memory.search_long_term_memory_async(
-#         request={"query": query, "limit": limit, **({"filter_": {**filter_, "op": "ALL"}} if filter_ else {})}
-#     )
+#     recall = await agent_memory.arecall(query, owner=user_id, types=[memory_type] if memory_type else [], limit=limit)
 #     entries: list[ProfileEntry] = [
-#         {"id": record.memory_id, "text": record.text, "memoryType": record.memory_type or "semantic", "topics": record.topics or []}
-#         for record in result.items
+#         {"id": memory.id, "text": memory.text, "memoryType": memory.memory_type or "semantic", "topics": list(memory.topics)}
+#         for memory in recall.memories
 #     ]
 #     log(f'🔍 Long-term memory "{query[:50]}": {len(entries)} found')
 #     return entries

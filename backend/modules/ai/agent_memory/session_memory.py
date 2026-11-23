@@ -9,11 +9,9 @@
 
 
 # %%
-from datetime import datetime, timezone
 from typing import Literal, TypedDict
 
-from redis_agent_memory.errors import NotFoundErrorResponseContent
-from redis_agent_memory.models import MessageRole
+from redis_iris.agent_memory import errors
 
 from backend.modules.ai.agent_memory.client import agent_memory
 from backend.lib.log import log
@@ -30,22 +28,19 @@ class Conversation(TypedDict):
     summary: str | None
 
 
-# Who the assistant's messages are from. The traveler's own messages are from the traveler.
-ASSISTANT_ACTOR_ID = "travel-agent"
-
-
 # %% [markdown]
 # ## Exercise 2A: read the session back
 #
-# **What to do:** read the session with `get_session_memory_async`, and return its messages and its summary.
+# **What to do:** read the session with `conversation.atranscript()`, and return its messages and its summary.
 #
-# - `session.events` are the messages, in order. Each has a `role` (`MessageRole.ASSISTANT` or the traveler's) and a `content`: a list of parts, each with a `text`.
-# - `session.summary.text` is what the service wrote about the older messages, once the conversation got long. It is not always there.
+# - `agent_memory.conversation(owner=user_id, session_id=session_id)` is this traveler's conversation in this session.
+# - `transcript.turns` are the messages, in order. Each is a pair: the role (`"user"` or `"assistant"`) and the text.
+# - `transcript.summary` is what the service wrote about the older messages, once the conversation got long. It is not always there.
 # - A session that does not exist yet is the normal first-turn case. The `except` below already handles it: it has no messages and no summary.
 
 
 # %%
-async def find_conversation_by_session_id(session_id: str) -> Conversation:
+async def find_conversation_by_session_id(user_id: str, session_id: str) -> Conversation:
     """
     Everything the service still holds for this session: its messages, in order, and a summary of the older ones once
     the conversation got long. A session that does not exist yet is the normal first-turn case, so it gives an empty
@@ -54,8 +49,8 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
 
     try:
 
-        # TODO start (Exercise 2A): read the session with `agent_memory.get_session_memory_async(session_id=...)`.
-        # Return its events as messages, and its summary.
+        # TODO start (Exercise 2A): read the session with `await agent_memory.conversation(owner=user_id, session_id=session_id).atranscript()`.
+        # Return its turns as messages, and its summary.
         # Until you write this, the agent has no memory of the conversation.
 
         return {"messages": [], "summary": None}
@@ -64,7 +59,7 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
 
     except Exception as error:
         # Not finding the session is expected on the first turn, so only report other errors.
-        if not isinstance(error, NotFoundErrorResponseContent):
+        if not isinstance(error, errors.NotFoundErrorResponseContent):
             print(f"Could not read the session: {error}")
         return {"messages": [], "summary": None}
 
@@ -74,7 +69,7 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
 # <summary>Show solution</summary>
 #
 # ```python
-# async def find_conversation_by_session_id(session_id: str) -> Conversation:
+# async def find_conversation_by_session_id(user_id: str, session_id: str) -> Conversation:
 #     """
 #     Everything the service still holds for this session: its messages, in order, and a summary of the older ones once
 #     the conversation got long. A session that does not exist yet is the normal first-turn case, so it gives an empty
@@ -82,16 +77,10 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
 #     """
 #
 #     try:
-#         session = await agent_memory.get_session_memory_async(session_id=session_id)
+#         transcript = await agent_memory.conversation(owner=user_id, session_id=session_id).atranscript()
 #         conversation: Conversation = {
-#             "messages": [
-#                 {
-#                     "role": "assistant" if event.role == MessageRole.ASSISTANT else "user",
-#                     "content": "".join(part.text for part in event.content),
-#                 }
-#                 for event in session.events
-#             ],
-#             "summary": session.summary.text if session.summary else None,
+#             "messages": [{"role": role, "content": text} for role, text in transcript.turns],
+#             "summary": transcript.summary,
 #         }
 #         log(f"📥 Session {session_id}: {len(conversation['messages'])} messages")
 #         if conversation["summary"]:
@@ -99,7 +88,7 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
 #         return conversation
 #     except Exception as error:
 #         # Not finding the session is expected on the first turn, so only report other errors.
-#         if not isinstance(error, NotFoundErrorResponseContent):
+#         if not isinstance(error, errors.NotFoundErrorResponseContent):
 #             print(f"Could not read the session: {error}")
 #         return {"messages": [], "summary": None}
 # ```
@@ -110,23 +99,23 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
 # %% [markdown]
 # ## Exercise 2A: add a message to the session
 #
-# **What to do:** add one message to the session with `add_session_event_async`.
+# **What to do:** add one message to the session with `conversation.auser(text)` for the traveler's message, or
+# `conversation.aassistant(text)` for the assistant's.
 #
-# - The role is `MessageRole.USER` or `MessageRole.ASSISTANT`, the content is `[{"text": ...}]`, and `created_at` is now.
-#
-# Every message says who it is from (`actor_id`). The first message sets the session's owner, so it must be the
-# traveler's. The assistant's replies are from the assistant: if they were labeled with the traveler's ID, the
-# service would read "Here are some places I recommend" as something the traveler said.
+# Every message says who it is from. The first message sets the session's owner, so it must be the traveler's.
+# `auser` labels a message with the traveler, and `aassistant` with the assistant (`travel-agent`, set in
+# `agent_memory/client.py`). If the assistant's replies were labeled with the traveler's ID, the service would read
+# "Here are some places I recommend" as something the traveler said.
 
 
 # %%
 async def save_message(session_id: str, user_id: str, message: Message) -> None:
     """
     Add one message to the session. The service extracts long-term memories from the session afterwards.
-    `actor_id` says who the message is from: the traveler's ID for their messages, and ASSISTANT_ACTOR_ID for the assistant's.
+    The traveler's messages are from the traveler, and the assistant's are from the assistant.
     """
 
-    # TODO start (Exercise 2A): add the message to the session with `agent_memory.add_session_event_async(...)`.
+    # TODO start (Exercise 2A): add the message to the session with `conversation.auser(...)` or `conversation.aassistant(...)`.
     # Until you write this, nothing is stored.
 
     return None
@@ -142,17 +131,14 @@ async def save_message(session_id: str, user_id: str, message: Message) -> None:
 # async def save_message(session_id: str, user_id: str, message: Message) -> None:
 #     """
 #     Add one message to the session. The service extracts long-term memories from the session afterwards.
-#     `actor_id` says who the message is from: the traveler's ID for their messages, and ASSISTANT_ACTOR_ID for the assistant's.
+#     The traveler's messages are from the traveler, and the assistant's are from the assistant.
 #     """
 #
-#     is_assistant = message["role"] == "assistant"
-#     await agent_memory.add_session_event_async(
-#         session_id=session_id,
-#         actor_id=ASSISTANT_ACTOR_ID if is_assistant else user_id,
-#         role=MessageRole.ASSISTANT if is_assistant else MessageRole.USER,
-#         content=[{"text": message["content"]}],
-#         created_at=datetime.now(timezone.utc),
-#     )
+#     conversation = agent_memory.conversation(owner=user_id, session_id=session_id)
+#     if message["role"] == "assistant":
+#         await conversation.aassistant(message["content"])
+#     else:
+#         await conversation.auser(message["content"])
 #     log(f"💾 {message['role']} message saved to session {session_id}")
 # ```
 #
@@ -167,5 +153,5 @@ async def save_message(session_id: str, user_id: str, message: Message) -> None:
 async def delete_conversation_by_session_id(session_id: str) -> None:
     """Delete this session, with everything in it."""
 
-    await agent_memory.delete_session_memory_async(session_id=session_id)
+    await agent_memory.client.delete_session_memory_async(session_id=session_id)
     log(f"🗑️ Session {session_id} deleted")

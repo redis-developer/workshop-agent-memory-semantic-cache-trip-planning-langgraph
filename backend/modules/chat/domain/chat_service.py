@@ -23,11 +23,11 @@ from backend.modules.ai import (
 )
 
 
-async def get_conversation(session_id: str) -> Conversation:
+async def get_conversation(user_id: str, session_id: str) -> Conversation:
     """The conversation of this session: what was said so far, and the summary of the older part."""
 
     log("get_conversation")
-    return await find_conversation_by_session_id(session_id)
+    return await find_conversation_by_session_id(user_id, session_id)
 
 
 async def clear_conversation(session_id: str) -> None:

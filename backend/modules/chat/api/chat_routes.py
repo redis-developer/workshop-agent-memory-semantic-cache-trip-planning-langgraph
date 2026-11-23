@@ -48,16 +48,16 @@ async def chat(request: ChatRequest):
 
 
 @chat_router.get("/session")
-async def get_session(session_id: str = Query("", alias="sessionId")):
+async def get_session(user_id: str = Query("", alias="userId"), session_id: str = Query("", alias="sessionId")):
     """
-    GET /api/chat/session?sessionId=...
+    GET /api/chat/session?userId=...&sessionId=...
     What the Memory tab shows about this conversation: how many messages and the summary.
     """
 
-    if not session_id:
-        return JSONResponse({"error": "sessionId is required"}, status_code=400)
+    if not user_id or not session_id:
+        return JSONResponse({"error": "userId and sessionId are required"}, status_code=400)
     try:
-        conversation = await get_conversation(session_id)
+        conversation = await get_conversation(user_id, session_id)
         return {"messageCount": len(conversation["messages"]), "summary": conversation["summary"]}
     except Exception as error:
         return JSONResponse({"error": str(error)}, status_code=500)

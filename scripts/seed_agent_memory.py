@@ -11,11 +11,10 @@ conversations and the ones the agent saved. It does not touch anyone else's memo
 """
 
 import asyncio
-import os
 import sys
 
 from dotenv import load_dotenv
-from redis_agent_memory import AgentMemory
+from redis_iris.agent_memory import AgentMemory
 
 load_dotenv()
 
@@ -43,14 +42,10 @@ travelers = {
     ],
 }
 
-# The longest to wait for the service. Writing memories can take longer than the 5 seconds the client waits by default.
+# The longest to wait for the service when writing the memories
 TIMEOUT_MS = 60_000
 
-agent_memory = AgentMemory(
-    server_url=os.environ["IRIS_AGENT_MEMORY_URL"],
-    store_id=os.environ["IRIS_AGENT_MEMORY_STORE_ID"],
-    api_key=os.environ["IRIS_AGENT_MEMORY_API_KEY"],
-)
+agent_memory = AgentMemory.from_env()
 
 memories = [
     {"memory_id": f"{user_id}-seed-{index}", "text": fact["text"], "owner_id": user_id, "memory_type": fact["memory_type"], "topics": fact["topics"]}
@@ -64,14 +59,14 @@ async def delete_all_memories(user_id: str) -> int:
     total = 0
     while True:
         # No query: this lists the traveler's memories instead of searching for the closest ones. Ten at a time:
-        # the service refused to delete a hundred in one request, and the loop asks again until none are left.
-        found = await agent_memory.search_long_term_memory_async(
+        # the service refuses to delete many in one request, and the loop asks again until none are left.
+        found = await agent_memory.client.search_long_term_memory_async(
             request={"limit": 10, "sort_by": "createdAt", "filter_": {"owner_id": {"eq": user_id}, "op": "ALL"}},
             timeout_ms=TIMEOUT_MS,
         )
         if not found.items:
             return total
-        removed = await agent_memory.bulk_delete_long_term_memories_async(
+        removed = await agent_memory.client.bulk_delete_long_term_memories_async(
             memory_ids=[record.memory_id for record in found.items], timeout_ms=TIMEOUT_MS
         )
         for error in removed.errors or []:
@@ -87,7 +82,7 @@ async def main() -> int:
         for user_id in travelers:
             print(f"Deleted {await delete_all_memories(user_id)} memories of {user_id}.")
 
-    result = await agent_memory.bulk_create_long_term_memories_async(memories=memories, timeout_ms=TIMEOUT_MS)
+    result = await agent_memory.client.bulk_create_long_term_memories_async(memories=memories, timeout_ms=TIMEOUT_MS)
     errors = result.errors or []
     already_there = [error for error in errors if error.status == 409]
     failed = [error for error in errors if error.status != 409]

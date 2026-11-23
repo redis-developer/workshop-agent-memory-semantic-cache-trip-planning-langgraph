@@ -70,7 +70,7 @@ async def stream_agent_turn(*, user_id: str, session_id: str, message: str, send
     was said. Returns the finished reply.
     """
 
-    conversation = await find_conversation_by_session_id(session_id)
+    conversation = await find_conversation_by_session_id(user_id, session_id)
 
     usage_handler = UsageCallbackHandler()
     started_at = time.perf_counter()

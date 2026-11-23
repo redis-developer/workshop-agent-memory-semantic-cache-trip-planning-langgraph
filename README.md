@@ -189,6 +189,8 @@ Stuck? You have two ways to get the solution:
 
 Nothing to write. Run the app and ask for a 3-day food trip in Tokyo, then say your budget is mid-range and ask for a plan. Then press **New session** and ask "can you adjust it for a family of four?". The assistant has no idea what you mean. Without memory, every conversation starts from nothing.
 
+---
+
 #### Exercise 2: working memory
 
 Make the agent remember the conversation so far.
@@ -201,6 +203,8 @@ Make the agent remember the conversation so far.
    Skip ahead with the solution: `./solve 2b`
 
 Full solution: `./solve 2`
+
+---
 
 #### Exercise 3: storing long-term memory (the model decides)
 
@@ -217,6 +221,8 @@ Full solution: `./solve 3`
 
 The service also reads each conversation and extracts memories on its own, about 5 minutes after the turn. `save_memory` writes straight away, and the model chooses what to keep.
 
+---
+
 #### Exercise 4: retrieving long-term memory (the model decides)
 
 Let the model look up what it saved.
@@ -230,6 +236,8 @@ Let the model look up what it saved.
 
 Full solution: `./solve 4`
 
+---
+
 #### Exercise 5: retrieving long-term memory (the code decides)
 
 Instead of waiting for the model to ask, look up memories before the agent runs, so it has them from the first word.
@@ -238,6 +246,8 @@ Instead of waiting for the model to ask, look up memories before the agent runs,
 - Log in as `ashwin`, say "hey", and see what the agent already knows. Then try logging in as your own user.
 
 Full solution: `./solve 5`
+
+---
 
 #### Exercise 6: semantic caching, check the cache
 
@@ -255,6 +265,8 @@ A question that was already answered does not need the agent again. Check the ca
    Skip ahead with the solution: `./solve 6b`
 
 Full solution: `./solve 6`
+
+---
 
 #### Exercise 7: semantic caching, store in the cache
 

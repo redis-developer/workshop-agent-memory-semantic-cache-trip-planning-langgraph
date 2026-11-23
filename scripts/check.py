@@ -10,7 +10,7 @@ import sys
 
 import httpx
 from dotenv import load_dotenv
-from redis_agent_memory import AgentMemory
+from redis_iris.agent_memory import AgentMemory
 
 load_dotenv()
 
@@ -31,11 +31,7 @@ async def check(label: str, run) -> bool:
         return False
 
 
-agent_memory = AgentMemory(
-    server_url=os.environ["IRIS_AGENT_MEMORY_URL"],
-    store_id=os.environ["IRIS_AGENT_MEMORY_STORE_ID"],
-    api_key=os.environ["IRIS_AGENT_MEMORY_API_KEY"],
-)
+agent_memory = AgentMemory.from_env().client
 
 
 async def check_openai() -> None:
