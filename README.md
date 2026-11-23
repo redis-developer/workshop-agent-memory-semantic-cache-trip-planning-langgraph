@@ -153,18 +153,18 @@ Right-click an exercise file and choose **Open With → Notebook**. When it asks
 | 2. Working memory | Remember the conversation so far | [`session_memory.py`](backend/modules/ai/agent_memory/session_memory.py), [`index.py`](backend/modules/ai/agent_workflow/index.py) |
 | 3. Storing long-term memory | Let the model save a lasting fact | [`long_term_memory.py`](backend/modules/ai/agent_memory/long_term_memory.py), [`memory_tools.py`](backend/modules/ai/agent_workflow/tools/memory_tools.py) |
 | 4. Retrieving long-term memory (the model decides) | Let the model search what it saved | [`long_term_memory.py`](backend/modules/ai/agent_memory/long_term_memory.py), [`memory_tools.py`](backend/modules/ai/agent_workflow/tools/memory_tools.py) |
-| 5. Retrieving long-term memory (the code decides) | Look up memories before the agent runs | [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
+| 5. Retrieving long-term memory (the code decides) | Look up memories before the agent runs | [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py) |
 
 #### Part 2: Semantic cache
 
 | Exercise | What to do | Relevant files |
 |---|---|---|
-| 6. Semantic caching: check the cache | Find a stored answer for a question with a similar meaning, and skip the agent on a match | [`public_cache.py`](backend/modules/ai/semantic_cache/public_cache.py), [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
-| 7. Semantic caching: store in the cache | Keep answers that are worth reusing, so similar questions find them | [`public_cache.py`](backend/modules/ai/semantic_cache/public_cache.py), [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py), [`graph.py`](backend/modules/ai/agent_workflow/graph.py) |
+| 6. Semantic caching: check the cache | Find a stored answer for a question with a similar meaning, and skip the agent on a match | [`public_cache.py`](backend/modules/ai/semantic_cache/public_cache.py), [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py) |
+| 7. Semantic caching: store in the cache | Keep answers that are worth reusing, so similar questions find them | [`public_cache.py`](backend/modules/ai/semantic_cache/public_cache.py), [`nodes.py`](backend/modules/ai/agent_workflow/nodes.py) |
 
 ### Exercises
 
-Where to write: look for `# TODO` in the files. The hint above each one says what to do.
+Where to write: look for `# TODO` in the files. The hint above each one says what to do. A TODO of several lines starts with `# TODO start` and ends with `# TODO end`: replace what is between them, the placeholder line included. The graph in `graph.py` is already complete. A step that you have not written yet shows "Not implemented yet" in the Steps panel and changes nothing, so the app runs from the start.
 
 Stuck? You have two ways to get the solution:
 
@@ -195,7 +195,7 @@ Make a lasting fact outlive the conversation.
 1. **Step A.** Create a long-term memory with its text, its owner (the traveler), a type (semantic for a preference, episodic for something that happened) and topics.
 
    Skip ahead with the solution: `./solve 3a`
-2. **Step B.** Write the `save_memory` tool and give it to the agent. Its description tells the model when to use it. Say "I'm vegetarian", then open the **Memory** tab.
+2. **Step B.** Write the `save_memory` tool and give it to the agent, by adding it to the `memory_tools` list at the bottom of its file. Its description tells the model when to use it. Say "I'm vegetarian", then open the **Memory** tab.
 
    Skip ahead with the solution: `./solve 3b`
 
@@ -210,7 +210,7 @@ Let the model look up what it saved.
 1. **Step A.** Search a traveler's long-term memories by meaning, only their own, with an optional memory type.
 
    Skip ahead with the solution: `./solve 4a`
-2. **Step B.** Write the `search_memories` tool. Start a new session and ask for something in different words, such as "any food restrictions I should remember?". The search is by meaning, not by keyword.
+2. **Step B.** Write the `search_memories` tool and add it to the `memory_tools` list. Start a new session and ask for something in different words, such as "any food restrictions I should remember?". The search is by meaning, not by keyword.
 
    Skip ahead with the solution: `./solve 4b`
 
@@ -220,7 +220,7 @@ Full solution: `./solve 4`
 
 Instead of waiting for the model to ask, look up memories before the agent runs, so it has them from the first word.
 
-- Write `retrieve_memories`, which searches for what the traveler just said, and add it to the graph before `agent`. Run the last cell of the graph file to draw it and see the new step.
+- Write `retrieve_memories` in `nodes.py`, which searches for what the traveler just said. The graph already runs it before `agent`: until you write it, the Steps panel shows "Not implemented yet". Run the last cell of `graph.py` to draw the graph.
 - Log in as `ashwin`, say "hey", and see what the agent already knows.
 
 Full solution: `./solve 5`
@@ -237,7 +237,7 @@ A question that was already answered does not need the agent again. Check the ca
 2. **Step A.** Look a question up in the cache, so that a question with a similar meaning finds the stored answer and its cards. How close counts as similar is the `DISTANCE_THRESHOLD` in `ai/semantic_cache/public_cache.py`: the lower it is, the stricter the match.
 
    Skip ahead with the solution: `./solve 6a`
-3. **Step B.** Write `check_cache` and put it first in the graph. On a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?". The answer comes back in about three seconds with its cards, marked **From the semantic cache**, and the agent never runs. Every question is looked up, but only a first question is kept (exercise 7), so the cache holds only questions that make sense on their own.
+3. **Step B.** Write `check_cache` in `nodes.py`. The graph already runs it first: on a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?". The answer comes back in about three seconds with its cards, marked **From the semantic cache**, and the agent never runs. Every question is looked up, but only a first question is kept (exercise 7), so the cache holds only questions that make sense on their own.
 
    Skip ahead with the solution: `./solve 6b`
 
@@ -250,7 +250,7 @@ Let the cache fill itself. After the agent answers, keep the question and its an
 1. **Step A.** Store a question together with its answer in the cache. The cards go along with it, in the entry's `metadata`.
 
    Skip ahead with the solution: `./solve 7a`
-2. **Step B.** Write `store_in_cache` and add it after `agent`. Log in with a new name, so there are no memories, and ask "What are the best places to visit in Lisbon?". It takes a while, because the agent runs. Then start a new session and ask "Top attractions in Lisbon": the second one comes from the cache.
+2. **Step B.** Write `store_in_cache` in `nodes.py`. The graph already runs it after `agent`. Log in with a new name, so there are no memories, and ask "What are the best places to visit in Lisbon?". It takes a while, because the agent runs. Then start a new session and ask "Top attractions in Lisbon": the second one comes from the cache.
 
    Not every answer is kept. An answer with the weather, one written with a traveler's memories, one without places and one to a follow-up are left out, because they are not true for everyone.
 

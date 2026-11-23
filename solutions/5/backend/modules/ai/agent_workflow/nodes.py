@@ -31,6 +31,7 @@ tools = [*memory_tools]
 
 def last_human_message(state: AgentState) -> str:
     """What the traveler said last."""
+
     return next((message.text for message in reversed(state["messages"]) if message.type == "human"), "")
 
 
@@ -55,8 +56,10 @@ async def check_cache(state: AgentState, config: RunnableConfig):
     and the graph ends here: no memories, no model call, no tools. Otherwise nothing changes and the agent runs.
     A cache outage must not stop the turn: it carries on as if nothing was found.
     """
+
     log(f'{config["metadata"]["langgraph_node"]}: not implemented yet')
     get_stream_writer()({"info": "Not implemented yet"})
+
     # TODO (Exercise 6B): look the question up in the cache, and end the graph on a hit.
     return {}
 
@@ -72,6 +75,7 @@ async def check_cache(state: AgentState, config: RunnableConfig):
 #     and the graph ends here: no memories, no model call, no tools. Otherwise nothing changes and the agent runs.
 #     A cache outage must not stop the turn: it carries on as if nothing was found.
 #     """
+#
 #     log(f'{config["metadata"]["langgraph_node"]}: looking up "{last_human_message(state)[:50]}"')
 #     writer = get_stream_writer()
 #     try:
@@ -105,6 +109,7 @@ async def retrieve_memories(state: AgentState, config: RunnableConfig):
     The same memory can match both searches, so each one is kept once. A memory outage must not stop the turn:
     it carries on without memories.
     """
+
     question = last_human_message(state)
     log(f'{config["metadata"]["langgraph_node"]}: looking up "{question[:50]}"')
     try:
@@ -124,6 +129,7 @@ async def agent(state: AgentState, config: RunnableConfig):
     `retrieve_memories`) and the summary of the earlier conversation. The model answers, or asks for tools: if its reply
     asks for tools, the graph runs them and comes back here.
     """
+
     today = datetime.now(timezone.utc).date().isoformat()
 
     memory_lines = "\n".join(f"- {memory['text']}" for memory in state["long_term_memories"]) or "Nothing yet: this is a new traveler."
@@ -178,8 +184,10 @@ async def store_in_cache(state: AgentState, config: RunnableConfig):
     not everyone's: the model is told not to keep it.
     A failure here must not stop the turn: the traveler has their reply already.
     """
+
     log(f'{config["metadata"]["langgraph_node"]}: not implemented yet')
     get_stream_writer()({"info": "Not implemented yet"})
+
     # TODO (Exercise 7B): ask the model if the answer can be kept, and keep it with `save_answer`.
     return {}
 
@@ -204,6 +212,7 @@ async def store_in_cache(state: AgentState, config: RunnableConfig):
 #     not everyone's: the model is told not to keep it.
 #     A failure here must not stop the turn: the traveler has their reply already.
 #     """
+#
 #     log(f'{config["metadata"]["langgraph_node"]}: {len(state["messages"])} messages')
 #     writer = get_stream_writer()
 #     try:

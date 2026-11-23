@@ -11,6 +11,7 @@ def get_chat_model(disable_streaming: bool = False) -> ChatOpenAI:
     small background calls whose output the traveler never reads (`disable_streaming`), so their text
     does not mix into the reply.
     """
+
     if disable_streaming not in _models:
         _models[disable_streaming] = ChatOpenAI(
             api_key=config.openai_api_key,

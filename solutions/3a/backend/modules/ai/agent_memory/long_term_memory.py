@@ -44,6 +44,7 @@ ENTRIES_PER_SEARCH = 5
 # %%
 async def create_long_term_memory(*, user_id: str, text: str, memory_type: MemoryType, topics: list[str] | None = None) -> BulkCreateLongTermMemoriesResponseContent:
     """Add one entry to a traveler's profile. Returns what Agent Memory answered: the ids it created, and any errors."""
+
     topics = topics or []
     response = await agent_memory.bulk_create_long_term_memories_async(
         memories=[{"memory_id": str(uuid4()), "text": text, "owner_id": user_id, "memory_type": memory_type, **({"topics": topics} if topics else {})}]
@@ -70,10 +71,14 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
     Search long-term memories by meaning. With a `user_id` it only looks in that traveler's entries, and with a
     `memory_type` it only looks at that type. It returns the closest entries, at most `limit`.
     """
-    # TODO (Exercise 4A): search with `agent_memory.search_long_term_memory_async(request={...})`.
+
+    # TODO start (Exercise 4A): search with `agent_memory.search_long_term_memory_async(request={...})`.
     # Return the entries as a list of ProfileEntry (see the top of this file).
-    # Until you write this, the agent finds nothing. Remove the line below when you have.
+    # Until you write this, the agent finds nothing.
+
     return []
+
+    # TODO end (Exercise 4A)
 
 
 # %% [markdown]
@@ -86,6 +91,7 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
 #     Search long-term memories by meaning. With a `user_id` it only looks in that traveler's entries, and with a
 #     `memory_type` it only looks at that type. It returns the closest entries, at most `limit`.
 #     """
+#
 #     filter_ = {
 #         **({"owner_id": {"eq": user_id}} if user_id else {}),
 #         **({"memory_type": {"eq": memory_type}} if memory_type else {}),
@@ -105,10 +111,11 @@ async def search_long_term_memory(*, query: str, user_id: str | None = None, mem
 
 
 # %% [markdown]
-# ## Reading a traveler's entries, for the Memory tab (you can leave this as it is)
+# ## Reading a traveler's entries, for the Memory tab
 
 
 # %%
 async def find_long_term_memories_by_user_id(user_id: str) -> list[ProfileEntry]:
     """A traveler's entries, for display. A search, so it returns the closest ones rather than every one."""
+
     return await search_long_term_memory(user_id=user_id, query="what the traveler likes and wants", limit=50)

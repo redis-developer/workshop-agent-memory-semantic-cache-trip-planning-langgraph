@@ -12,6 +12,7 @@ from backend.modules.ai.agent_workflow.utils import maps_attachments, memories_i
 
 def tool_info(message, cards: list) -> str:
     """One line for the page on what a tool call did, such as "Found 5 places"."""
+
     if message.status == "error":
         return "The tool failed"
     result = read_tool_result(message)
@@ -33,6 +34,7 @@ async def process_tool_call(request, execute):
     Only the Google Maps tools make cards: for the other tools the list is empty.
     It also tells the page what the call did: the key says which call, so two tools running together do not mix.
     """
+
     result = await execute(request)
     cards = maps_attachments([result])
     get_stream_writer()({"key": request.tool_call["id"], "info": tool_info(result, cards)})

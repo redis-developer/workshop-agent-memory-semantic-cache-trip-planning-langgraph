@@ -31,6 +31,7 @@ class UsageCallbackHandler(AsyncCallbackHandler):
     @property
     def usage(self) -> dict:
         """The totals, in the names the page reads."""
+
         return {
             "inputTokens": self.input_tokens,
             "outputTokens": self.output_tokens,
@@ -42,5 +43,6 @@ class UsageCallbackHandler(AsyncCallbackHandler):
 
 def add_counts(totals: dict[str, int], counts: dict[str, int] | None) -> None:
     """Add each count in `counts`, such as cache_read or reasoning tokens, onto `totals`."""
+
     for name, value in (counts or {}).items():
         totals[name] = totals.get(name, 0) + value

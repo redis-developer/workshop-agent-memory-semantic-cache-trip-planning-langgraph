@@ -21,12 +21,14 @@ MAPS_TOOLS = ["search_places", "lookup_weather"]
 
 async def log_tool_call(request: MCPToolCallRequest, handler):
     """One log line for every Google Maps tool call"""
+
     log(f"{request.name}: {json.dumps(request.args)}")
     return await handler(request)
 
 
 async def load_maps_tools() -> list:
     """Connect to Google's server and ask for its tools. Keeps Google's own tool names, such as `search_places`."""
+
     client = MultiServerMCPClient(
         {
             "maps": {

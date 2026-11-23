@@ -42,13 +42,14 @@ Code outside `ai/` imports from `backend.modules.ai`, whose `__init__.py` lists 
 ### Code style
 
 - Use whole words for names, with no abbreviations and no single letters (except an iterator such as `i`). Name a variable for what it holds.
+- A blank line after a function's docstring makes the function easier to read.
 - Do not add a helper, a layer or a file that only one thing uses. A reader should not have to follow code that the lesson does not need.
 - Do not add logs that are not needed.
 - Fix a problem at its source, not where it shows up.
 
 ### The exercise files
 
-The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. The files in the repository are the **starter**: each step a participant writes is a stub with a `# TODO` and a hint, written so the app still runs without memory. Under each step is a collapsed "Show solution" block (`<details>`) with the finished code. Keep every existing comment when you turn code into a stub.
+The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. The files in the repository are the **starter**: each step a participant writes is a stub with a `# TODO` and a hint, written so the app still runs without memory. A TODO of several lines is a block: `# TODO start (Exercise 2B): ...` at the top, the hint, the placeholder `return` or `raise`, and `# TODO end (Exercise 2B)` at the bottom. A TODO of one line has no markers. A stub reads more easily with some air around it: we usually leave a blank line before a `# TODO`, between its hint and the placeholder code, before `# TODO end`, and after it. Under each step is a collapsed "Show solution" block (`<details>`) with the finished code. Keep every existing comment when you turn code into a stub.
 
 The finished files are in `solutions/<step>/`, at the same path as in the repository, and `./solve` copies them over. Each one has its step solved and every earlier step in the same file, and its headings say "(solved)". When you change exercise code, update the stub, the "Show solution" block and the file in `solutions/` together, and keep the README exercise and the diagram saying the same thing.
 
@@ -63,6 +64,7 @@ Update it whenever you add, remove, rename or reroute a piece of the app, or cha
 - **Text that changes with the exercise:** `data-show-from` and `data-hide-from` show or hide a label from a given exercise on.
 - **The text above the diagram:** the title and the description of each exercise are in the `STAGES` table at the top of the script. Change `LAST_STAGE` if you add an exercise.
 - **Tooltips:** give every piece a `data-info`, written for a reader who is new to it.
+- **Reads and writes in the step tooltips:** a step of the graph also has `data-reads` and `data-writes`, the state fields it reads and the fields it writes, as a comma-separated list (`data-writes=""` for a step that writes nothing). They build the "Reads:" and "Writes:" lines of its tooltip, so they must match what the step in `nodes.py` does with `AgentState`. `data-writes-when` adds a condition to the writes, such as "on a hit".
 - **Logos:** they live in `frontend/icons/`. Use a logo as its owner provides it (their light or dark version, not recoloured) and follow their brand guidelines.
 - **Checking it:** open the page, step through every exercise with the arrow keys, and look for text that overflows its box, arrows that run through boxes, and anything that stays lit too early.
 

@@ -1,3 +1,4 @@
+# %%
 import time
 from typing import Callable
 
@@ -18,6 +19,7 @@ graph = None
 
 async def start_agent() -> None:
     """Build the agent. It is built when the app starts, because Google's tools are loaded from its server."""
+
     global graph
     # Google's tools come from its server, so they are added to the agent's tools before the graph is built
     tools.extend(await load_maps_tools())
@@ -25,7 +27,13 @@ async def start_agent() -> None:
 
 
 # %% [markdown]
-# ## Exercise 2B (solved): remember the conversation
+# ## Exercise 2B: remember the conversation
+#
+# **What to do:** load the conversation before the agent runs, and save the turn after it, using the calls you wrote in step A (`agent_memory/session_memory.py`).
+#
+# - `history_for_prompt`: give the model the latest messages of the conversation (at most `MAX_MESSAGES_IN_PROMPT`), as `HumanMessage` and `AIMessage`.
+# - `save_turn`: save each message of the turn with `save_message`.
+# - `stream_agent_turn`: load the conversation with `find_conversation_by_session_id` before the graph runs, and save the turn after it. Save it after the model call, not before: the question must not be in the history twice.
 #
 # A session is one conversation. `stream_agent_turn` loads it before the agent runs, and saves the turn after,
 # using the calls you wrote in step A (`agent_memory/session_memory.py`). Try it:
@@ -48,25 +56,67 @@ MAX_MESSAGES_IN_PROMPT = 10
 
 def history_for_prompt(conversation: Conversation) -> list[HumanMessage | AIMessage]:
     """What the model is given: the latest messages of the conversation."""
-    return [
-        HumanMessage(entry["content"]) if entry["role"] == "user" else AIMessage(entry["content"])
-        for entry in conversation["messages"][-MAX_MESSAGES_IN_PROMPT:]
-    ]
+
+    # TODO start (Exercise 2B): turn the latest messages of the conversation (at most MAX_MESSAGES_IN_PROMPT) into HumanMessage and AIMessage.
+    # Until you write this, the agent is given no history.
+
+    return []
+
+    # TODO end (Exercise 2B)
 
 
 async def save_turn(session_id: str, user_id: str, messages: list[Message]) -> None:
     """Add this turn's messages to the conversation."""
-    log(f"save_turn: {len(messages)} messages")
-    for message in messages:
-        await save_message(session_id, user_id, message)
+
+    # TODO start (Exercise 2B): save each message of the turn to the session with `save_message`.
+    # Until you write this, nothing is saved.
+
+    return None
+
+    # TODO end (Exercise 2B)
 
 
+# %% [markdown]
+# <details>
+# <summary>Show solution</summary>
+#
+# ```python
+# MAX_MESSAGES_IN_PROMPT = 10
+#
+#
+# def history_for_prompt(conversation: Conversation) -> list[HumanMessage | AIMessage]:
+#     """What the model is given: the latest messages of the conversation."""
+#
+#     return [
+#         HumanMessage(entry["content"]) if entry["role"] == "user" else AIMessage(entry["content"])
+#         for entry in conversation["messages"][-MAX_MESSAGES_IN_PROMPT:]
+#     ]
+#
+#
+# async def save_turn(session_id: str, user_id: str, messages: list[Message]) -> None:
+#     """Add this turn's messages to the conversation."""
+#
+#     log(f"save_turn: {len(messages)} messages")
+#     for message in messages:
+#         await save_message(session_id, user_id, message)
+# ```
+#
+# </details>
+
+
+# %%
 async def stream_agent_turn(*, user_id: str, session_id: str, message: str, send: Callable[[TurnEvent], None]) -> str:
     """
     One turn: load the conversation, run the agent for one message and stream what it does to `send`, then save what
     was said. Returns the finished reply.
     """
-    conversation = await find_conversation_by_session_id(session_id)
+
+    # TODO start (Exercise 2B): load the conversation of this session with `find_conversation_by_session_id`.
+    # Until you write this, the agent knows nothing of it.
+
+    conversation: Conversation = {"messages": [], "summary": None}
+
+    # TODO end (Exercise 2B)
 
     usage_handler = UsageCallbackHandler()
     started_at = time.perf_counter()
@@ -90,6 +140,52 @@ async def stream_agent_turn(*, user_id: str, session_id: str, message: str, send
 
     # The last message of the finished run is the reply.
     reply = final_state["messages"][-1].text
-    if reply:
-        await save_turn(session_id, user_id, [{"role": "user", "content": message}, {"role": "assistant", "content": reply}])
+
+    # TODO start (Exercise 2B): save this turn with `save_turn`: the traveler's message, then the reply. Only if there is a reply.
+    # Until you write this, nothing is saved.
+    # TODO end (Exercise 2B)
+
     return reply
+
+
+# %% [markdown]
+# <details>
+# <summary>Show solution</summary>
+#
+# ```python
+# async def stream_agent_turn(*, user_id: str, session_id: str, message: str, send: Callable[[TurnEvent], None]) -> str:
+#     """
+#     One turn: load the conversation, run the agent for one message and stream what it does to `send`, then save what
+#     was said. Returns the finished reply.
+#     """
+#
+#     conversation = await find_conversation_by_session_id(session_id)
+#
+#     usage_handler = UsageCallbackHandler()
+#     started_at = time.perf_counter()
+#     stream = graph.astream(
+#         {
+#             "user_id": user_id,
+#             "session_id": session_id,
+#             "messages": [*history_for_prompt(conversation), HumanMessage(message)],
+#             "conversation_summary": conversation["summary"],
+#             "long_term_memories": [],
+#             "attachments": [],
+#             "is_cache_hit": False,
+#         },
+#         # `configurable` is how the tools learn who is asking. The handler adds up the tokens of every model call.
+#         {"configurable": {"user_id": user_id, "session_id": session_id}, "recursion_limit": 12, "callbacks": [usage_handler]},
+#         stream_mode=STREAM_MODES,
+#         version="v2",
+#     )
+#     final_state = await read_run(stream, send)
+#     send({"type": "usage", "usage": usage_handler.usage, "responseTime": time.perf_counter() - started_at, "isCacheHit": final_state.get("is_cache_hit", False)})
+#
+#     # The last message of the finished run is the reply.
+#     reply = final_state["messages"][-1].text
+#     if reply:
+#         await save_turn(session_id, user_id, [{"role": "user", "content": message}, {"role": "assistant", "content": reply}])
+#     return reply
+# ```
+#
+# </details>

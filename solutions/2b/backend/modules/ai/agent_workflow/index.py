@@ -18,6 +18,7 @@ graph = None
 
 async def start_agent() -> None:
     """Build the agent. It is built when the app starts, because Google's tools are loaded from its server."""
+
     global graph
     # Google's tools come from its server, so they are added to the agent's tools before the graph is built
     tools.extend(await load_maps_tools())
@@ -48,6 +49,7 @@ MAX_MESSAGES_IN_PROMPT = 10
 
 def history_for_prompt(conversation: Conversation) -> list[HumanMessage | AIMessage]:
     """What the model is given: the latest messages of the conversation."""
+
     return [
         HumanMessage(entry["content"]) if entry["role"] == "user" else AIMessage(entry["content"])
         for entry in conversation["messages"][-MAX_MESSAGES_IN_PROMPT:]
@@ -56,6 +58,7 @@ def history_for_prompt(conversation: Conversation) -> list[HumanMessage | AIMess
 
 async def save_turn(session_id: str, user_id: str, messages: list[Message]) -> None:
     """Add this turn's messages to the conversation."""
+
     log(f"save_turn: {len(messages)} messages")
     for message in messages:
         await save_message(session_id, user_id, message)
@@ -66,6 +69,7 @@ async def stream_agent_turn(*, user_id: str, session_id: str, message: str, send
     One turn: load the conversation, run the agent for one message and stream what it does to `send`, then save what
     was said. Returns the finished reply.
     """
+
     conversation = await find_conversation_by_session_id(session_id)
 
     usage_handler = UsageCallbackHandler()

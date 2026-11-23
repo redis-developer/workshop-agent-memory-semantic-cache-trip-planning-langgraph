@@ -25,17 +25,20 @@ from backend.modules.ai import (
 
 async def get_conversation(session_id: str) -> Conversation:
     """The conversation of this session: what was said so far, and the summary of the older part."""
+
     log("get_conversation")
     return await find_conversation_by_session_id(session_id)
 
 
 async def clear_conversation(session_id: str) -> None:
     """Delete the conversation of this session."""
+
     log("clear_conversation")
     await delete_conversation_by_session_id(session_id)
 
 
 async def run_turn(*, user_id: str, session_id: str, message: str, send: Callable[[TurnEvent], None]) -> None:
     """One turn: the agent loads the conversation, answers and saves it. Then tell the page it is done."""
+
     reply = await stream_agent_turn(user_id=user_id, session_id=session_id, message=message, send=send)
     send({"type": "done", "reply": reply})

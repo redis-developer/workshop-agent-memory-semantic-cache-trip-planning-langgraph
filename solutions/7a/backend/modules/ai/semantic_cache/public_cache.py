@@ -52,6 +52,7 @@ class CachedAnswer(TypedDict):
 # %%
 async def find_cached_answer(question: str) -> CachedAnswer | None:
     """The answer to a question with the same meaning as this one, or None if the cache holds no such question."""
+
     hits = await cache.acheck(prompt=question, return_fields=["prompt", "response", "metadata", "vector_distance"])
     if not hits:
         log(f'💾 Cache: no similar question for "{question[:50]}"')
@@ -68,6 +69,7 @@ async def find_cached_answer(question: str) -> CachedAnswer | None:
 # %%
 async def save_answer(question: str, answer: CachedAnswer) -> str:
     """Keep this question with its answer, and the cards that came with it. Returns the key the cache gave the entry."""
+
     key = await cache.astore(prompt=question, response=answer["text"], metadata={"attachments": answer["attachments"]})
     log(f'💾 Cache: stored the answer to "{question[:50]}" with {len(answer["attachments"])} cards')
     return key

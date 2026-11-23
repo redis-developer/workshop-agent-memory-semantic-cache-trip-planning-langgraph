@@ -12,6 +12,7 @@ async def profile(user_id: str = Query("", alias="userId")):
     GET /api/user/profile?userId=...
     What we know about this traveler, for the Memory tab.
     """
+
     if not user_id:
         return JSONResponse({"error": "userId is required"}, status_code=400)
     try:

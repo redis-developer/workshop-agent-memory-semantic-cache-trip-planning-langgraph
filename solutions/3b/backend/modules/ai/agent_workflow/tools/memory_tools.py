@@ -44,6 +44,7 @@ class SaveMemoryInput(BaseModel):
 )
 async def save_memory_tool(fact: str, memory_type: str, topics: list[str] | None = None, *, config: RunnableConfig):
     """Save a lasting fact about the traveler as a long-term memory, so the agent knows it in later conversations."""
+
     user_id = config["configurable"]["user_id"]
     log(f'save_memory: "{fact}" ({memory_type})')
     response = await create_long_term_memory(user_id=user_id, text=fact, memory_type=memory_type, topics=topics)
@@ -68,15 +69,19 @@ class SearchMemoriesInput(BaseModel):
     )
 
 
-# TODO (Exercise 4B): turn this function into a tool.
+# TODO start (Exercise 4B): turn this function into a tool.
 #   1. Add the `@tool(...)` decorator above it, with the name "search_memories", `args_schema=SearchMemoriesInput` and a `description`.
 #      The description tells the model when to look: when a recommendation depends on what the traveler said before.
 #   2. Search with `search_long_term_memory(user_id=..., query=..., memory_type=...)` and return what it finds.
 #   3. Add the tool to the `memory_tools` list at the bottom of this file.
+# TODO end (Exercise 4B)
+
 async def search_memories_tool(query: str, memory_type: str | None = None, *, config: RunnableConfig):
     """Look up what the traveler told us before, by meaning, in their long-term memories."""
+
     user_id = config["configurable"]["user_id"]
     log(f'search_memories: "{query}"{f" ({memory_type})" if memory_type else ""}')
+
     # TODO: search here, and return the entries.
     return []
 
@@ -104,6 +109,7 @@ async def search_memories_tool(query: str, memory_type: str | None = None, *, co
 # )
 # async def search_memories_tool(query: str, memory_type: str | None = None, *, config: RunnableConfig):
 #     """Look up what the traveler told us before, by meaning, in their long-term memories."""
+#
 #     user_id = config["configurable"]["user_id"]
 #     log(f'search_memories: "{query}"{f" ({memory_type})" if memory_type else ""}')
 #     return await search_long_term_memory(user_id=user_id, query=query, memory_type=memory_type)
@@ -118,4 +124,5 @@ async def search_memories_tool(query: str, memory_type: str | None = None, *, co
 
 # %%
 memory_tools = [save_memory_tool]
+
 # TODO (Exercise 4B): add `search_memories_tool` here when it is a tool.

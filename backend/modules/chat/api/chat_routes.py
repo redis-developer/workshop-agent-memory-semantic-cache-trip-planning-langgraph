@@ -23,6 +23,7 @@ async def chat(request: ChatRequest):
     POST /api/chat { userId, sessionId, message }
     Runs one turn and streams what happens, one JSON event per line (see TurnEvent in ai/agent_workflow/stream_events.py).
     """
+
     if not request.userId or not request.sessionId or not request.message:
         return JSONResponse({"error": "userId, sessionId and message are required"}, status_code=400)
 
@@ -52,6 +53,7 @@ async def get_session(session_id: str = Query("", alias="sessionId")):
     GET /api/chat/session?sessionId=...
     What the Memory tab shows about this conversation: how many messages and the summary.
     """
+
     if not session_id:
         return JSONResponse({"error": "sessionId is required"}, status_code=400)
     try:
@@ -64,6 +66,7 @@ async def get_session(session_id: str = Query("", alias="sessionId")):
 @chat_router.delete("/session")
 async def delete_session(session_id: str = Query("", alias="sessionId")):
     """DELETE /api/chat/session?sessionId=... : forget this conversation. What we know about the traveler stays."""
+
     if not session_id:
         return JSONResponse({"error": "sessionId is required"}, status_code=400)
     try:

@@ -82,6 +82,7 @@ async def read_run(stream: AsyncIterator[dict], send: Callable[[TurnEvent], None
     @param stream: The stream returned by the graph's `astream`
     @param send: Called with each event for the page
     """
+
     final_state: dict = {}
     # The cards the tools found so far this turn. Every pass of the tools adds to them.
     attachments: list[Attachment] = []

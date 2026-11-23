@@ -45,6 +45,7 @@ async def find_conversation_by_session_id(session_id: str) -> Conversation:
     the conversation got long. A session that does not exist yet is the normal first-turn case, so it gives an empty
     conversation.
     """
+
     try:
         session = await agent_memory.get_session_memory_async(session_id=session_id)
         conversation: Conversation = {
@@ -82,6 +83,7 @@ async def save_message(session_id: str, user_id: str, message: Message) -> None:
     Add one message to the session. The service extracts long-term memories from the session afterwards.
     `actor_id` says who the message is from: the traveler's ID for their messages, and ASSISTANT_ACTOR_ID for the assistant's.
     """
+
     is_assistant = message["role"] == "assistant"
     await agent_memory.add_session_event_async(
         session_id=session_id,
@@ -94,11 +96,12 @@ async def save_message(session_id: str, user_id: str, message: Message) -> None:
 
 
 # %% [markdown]
-# ## Deleting a session (you can leave this as it is)
+# ## Deleting a session
 
 
 # %%
 async def delete_conversation_by_session_id(session_id: str) -> None:
     """Delete this session, with everything in it."""
+
     await agent_memory.delete_session_memory_async(session_id=session_id)
     log(f"🗑️ Session {session_id} deleted")
