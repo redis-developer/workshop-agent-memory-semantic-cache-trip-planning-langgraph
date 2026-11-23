@@ -4,56 +4,210 @@ Copy the finished code of a step over your files.
 
     ./solve 2a     one step
     ./solve 2      a whole exercise (2a, then 2b)
+    ./solve all    every step, in order
 
-Your own version of each file is saved first, in .solve-backup/. A solution includes what the earlier steps in the
-same file did, so run the steps in order if you skip one.
+Your own version of each file is saved first, in .solve-backup/. A solution includes what the earlier steps in the same
+file did, so run the steps in order if you skip one.
+
+To see the finished app without touching your files, build it in a folder of its own:
+
+    ./solve all --out build/solved     your files stay as they are
+    ./solve run                        build it in build/solved and start the app from there (needs uv)
+    ./solve run --port 8000            the same, on another port (the default is 5010)
+
+On Windows, run it as `python solve ...`.
 """
 
+import argparse
+import os
 import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
 
+
+# ---------- Settings ----------
+
 ROOT = Path(__file__).resolve().parent
 SOLUTIONS = ROOT / "solutions"
+DEFAULT_OUT = ROOT / "build" / "solved"
+
+# A folder with this file in it was made by this script, so it is safe to build over it again
+MARKER = ".solve-build"
+
+# Left out of the finished copy, at the top of the project only
+TOP_LEVEL_SKIPPED = {
+    ".git",  # tooling
+    ".venv",  # tooling
+    ".claude",  # tooling
+    ".solve-backup",  # your own backups
+    "build",  # where the copy itself goes
+    "solutions",  # not needed to run the app
+    "solve",  # this script
+}
+
+# Left out of the finished copy, in every folder
+SKIPPED_ANYWHERE = {"__pycache__", ".ipynb_checkpoints", "node_modules", ".pytest_cache", ".ruff_cache", ".mypy_cache", ".DS_Store"}
 
 
-def steps_for(name: str) -> list[str]:
-    """'2a' is one step. '2' is every step of exercise 2."""
-    available = sorted(path.name for path in SOLUTIONS.iterdir() if path.is_dir())
+# ---------- Finding the steps ----------
+
+
+def available_steps():
+    """Every step that has a solution, such as 2a, 2b, 3a ..."""
+    return sorted(path.name for path in SOLUTIONS.iterdir() if path.is_dir())
+
+
+def steps_for(name):
+    """'2a' is one step. '2' is every step of exercise 2. 'all' is every step."""
+    available = available_steps()
+    if name == "all":
+        return available
     return [step for step in available if step == name or (name.isdigit() and step.rstrip("abcdefgh") == name)]
 
 
-def main() -> int:
-    available = sorted(path.name for path in SOLUTIONS.iterdir() if path.is_dir())
-    if len(sys.argv) != 2:
-        print(__doc__.strip())
+def solution_files(steps):
+    """
+    Each file of these solutions: its step, where it is in solutions/, and the path it goes to in the project.
+    A later step has everything an earlier step did in the same file, so a file is only given once, from the last step.
+    """
+    latest = {}
+    for step in steps:
+        for solution in sorted((SOLUTIONS / step).rglob("*")):
+            if solution.is_file():
+                latest[solution.relative_to(SOLUTIONS / step)] = (step, solution)
+    for relative, (step, solution) in sorted(latest.items(), key=lambda item: (item[1][0], str(item[0]))):
+        yield step, solution, relative
+
+
+# ---------- Putting the solutions in your own files ----------
+
+
+def apply_in_place(steps):
+    """Copy the solutions over your files. Your own version of each file is saved in .solve-backup/ first."""
+    backup = ROOT / ".solve-backup" / datetime.now().strftime("%Y%m%d-%H%M%S")
+    saved_any = False
+    for step, solution, relative in solution_files(steps):
+        target = ROOT / relative
+        if target.exists() and target.read_text() == solution.read_text():
+            print(f"{step}: {relative} already has the solution")
+            continue
+        if target.exists():
+            (backup / relative).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target, backup / relative)
+            saved_any = True
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(solution, target)
+        print(f"{step}: {relative}")
+    if saved_any:
+        print(f"\nYour own versions are saved in {backup.relative_to(ROOT)}")
+
+
+# ---------- Building a finished copy ----------
+
+
+def prepare_folder(out):
+    """Make sure `out` can be built in. A folder that this script made is cleared. Anything else is left alone."""
+    out = out.resolve()
+    if out == ROOT or out in ROOT.parents:
+        sys.exit(f"{out} is the project or a folder around it. Choose a folder of its own, such as build/solved.")
+    if out.exists():
+        if (out / MARKER).exists() or not any(out.iterdir()):
+            shutil.rmtree(out)
+        else:
+            sys.exit(f"{out} exists and was not made by ./solve, so it is left alone. Choose another folder or remove it yourself.")
+    return out
+
+
+def copy_project(out):
+    """Copy the project into `out`, without your keys or the tooling."""
+    skipped_at_top = set(TOP_LEVEL_SKIPPED)
+    if ROOT in out.parents:
+        skipped_at_top.add(out.relative_to(ROOT).parts[0])  # the copy must not copy itself
+
+    def ignore(directory, names):
+        left_out = set(names) & SKIPPED_ANYWHERE
+        if Path(directory).resolve() == ROOT:
+            left_out |= set(names) & skipped_at_top
+        for name in names:
+            # your keys stay on your machine: .env and .env.local are left out, .env.example is kept
+            if name.startswith(".env") and name != ".env.example":
+                left_out.add(name)
+        return left_out
+
+    shutil.copytree(ROOT, out, ignore=ignore)
+    (out / MARKER).write_text("Made by ./solve. It is safe to delete and build again.\n")
+
+
+def apply_solutions(steps, out):
+    """Put the finished code of these steps in the copy."""
+    for _step, solution, relative in solution_files(steps):
+        target = out / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(solution, target)
+
+
+def add_entry_point(out):
+    """Some hosts look for the app in app.py at the top of the project."""
+    (out / "app.py").write_text('"""The entry point for hosts that look for `app` in app.py."""\n\nfrom backend.main import app  # noqa: F401\n')
+
+
+def build_copy(steps, out):
+    """The project in a folder of its own, with the finished code of `steps` in it. Your own files are not touched."""
+    out = prepare_folder(out)
+    copy_project(out)
+    apply_solutions(steps, out)
+    add_entry_point(out)
+    return out
+
+
+# ---------- Running the finished app ----------
+
+
+def run_app(out, port):
+    """Start the app from the copy. This replaces the script, so Ctrl+C stops the app."""
+    if shutil.which("uv") is None:
+        sys.exit("./solve run needs uv: https://docs.astral.sh/uv/getting-started/installation/")
+    print(f"The finished app is in {out}. Starting it on port {port}...\n")
+    os.chdir(ROOT)  # so that uv uses this project's environment and finds your .env
+    os.execvp("uv", ["uv", "run", "uvicorn", "backend.main:app", "--app-dir", str(out), "--port", port])
+
+
+# ---------- Reading the command ----------
+
+
+def read_command():
+    parser = argparse.ArgumentParser(prog="solve", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("target", nargs="?", help="a step such as 2a, an exercise such as 2, 'all', or 'run'")
+    parser.add_argument("--out", help="build the finished app in this folder instead of changing your files")
+    parser.add_argument("--port", default="5010", help="the port for 'run' (default 5010)")
+    return parser, parser.parse_args()
+
+
+def main():
+    parser, command = read_command()
+    available = available_steps()
+    if command.target is None:
+        parser.print_help()
         print(f"\nSteps with a solution: {', '.join(available)}")
         return 1
 
-    steps = steps_for(sys.argv[1])
+    if command.target == "run":
+        out = build_copy(available, Path(command.out) if command.out else DEFAULT_OUT)
+        run_app(out, command.port)
+
+    steps = steps_for(command.target)
     if not steps:
-        print(f"There is no solution for '{sys.argv[1]}'. Steps with a solution: {', '.join(available)}")
+        print(f"There is no solution for '{command.target}'. Steps with a solution: {', '.join(available)}")
         return 1
 
-    backup = ROOT / ".solve-backup" / datetime.now().strftime("%Y%m%d-%H%M%S")
-    for step in steps:
-        for solution in sorted((SOLUTIONS / step).rglob("*")):
-            if not solution.is_file():
-                continue
-            relative = solution.relative_to(SOLUTIONS / step)
-            target = ROOT / relative
-            if target.exists() and target.read_text() == solution.read_text():
-                print(f"{step}: {relative} already has the solution")
-                continue
-            if target.exists():
-                (backup / relative).parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(target, backup / relative)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(solution, target)
-            print(f"{step}: {relative}")
-    if backup.exists():
-        print(f"\nYour own versions are saved in {backup.relative_to(ROOT)}")
+    if command.out:
+        out = build_copy(steps, Path(command.out))
+        print(f"Built {out} with the solutions of: {', '.join(steps)}. Your own files are unchanged.")
+        print(f"To start it:  uv run uvicorn backend.main:app --app-dir {out} --port 5010")
+        return 0
+
+    apply_in_place(steps)
     return 0
 
 

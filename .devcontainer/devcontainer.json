@@ -2,9 +2,10 @@
   "name": "Workshop: Reuse Knowledge for Agentic AI",
   "image": "mcr.microsoft.com/devcontainers/python:3.15",
   "postCreateCommand": "pip install uv && uv sync && uv run python -m ipykernel install --sys-prefix --name workshop-agent-memory-semantic-cache-trip-planning-langgraph --display-name 'Reuse Knowledge for Agentic AI' --env PYTHONPATH \"$PWD\"",
-  "forwardPorts": [3000],
+  "forwardPorts": [3000, 5010],
   "portsAttributes": {
-    "3000": { "label": "Trip planner", "onAutoForward": "openBrowser" }
+    "3000": { "label": "Trip planner", "onAutoForward": "openBrowser" },
+    "5010": { "label": "Finished app", "onAutoForward": "notify" }
   },
   "customizations": {
     "vscode": {

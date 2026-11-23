@@ -53,6 +53,16 @@ The exercise files are notebook-style scripts (Jupytext percent format): the `# 
 
 The finished files are in `solutions/<step>/`, at the same path as in the repository, and `./solve` copies them over. Each one has its step solved and every earlier step in the same file, and its headings say "(solved)". When you change exercise code, update the stub, the "Show solution" block and the file in `solutions/` together, and keep the README exercise and the diagram saying the same thing.
 
+### The finished app
+
+`./solve run` builds a copy of the project with every solution in `build/solved/` and starts it from there with `uv run uvicorn backend.main:app --app-dir build/solved`. Your own files are not changed. `--port` picks the port, and 5010 is the default.
+
+`./solve all --out <folder>` only builds the copy, for example to deploy it. The copy leaves out `.env` (set the keys as environment variables where you host it), `.git`, `.venv`, `solutions/`, `build/` and caches, and it has an `app.py` at the top for hosts that look for the app there. It only builds over a folder that `./solve` made (it has a `.solve-build` file), and it refuses the project folder and the folders around it.
+
+`./solve all` without `--out` applies every solution to your own files. A later step has everything an earlier step did in the same file, so each file is written once, from the last step, and your own versions are saved in `.solve-backup/` first.
+
+A new step in `solutions/` is picked up by all three.
+
 ## The architecture diagram
 
 `frontend/architecture.html` is a single page: an inline SVG, its styles, and a script at the bottom. It shows how the pieces fit and lights up what each exercise adds. It is linked from the README and from the app, so it has to match the code.

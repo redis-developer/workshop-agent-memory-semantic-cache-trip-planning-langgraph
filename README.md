@@ -27,7 +27,13 @@ Get the code first.
 
 **In GitHub Codespaces** (nothing to install): open the repository in a Codespace.
 
-**On your machine** ([uv](https://docs.astral.sh/uv/) installed; it fetches Python 3.15 for you):
+**On your machine** ([uv](https://docs.astral.sh/uv/) installed; it fetches Python 3.15 for you). To install uv, use one of these (see the [installation guide](https://docs.astral.sh/uv/getting-started/installation/)):
+
+- macOS with Homebrew: `brew install uv`
+- macOS and Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
+
+Then:
 
 ```bash
 uv sync
@@ -108,6 +114,14 @@ uv run uvicorn backend.main:app --port 3000 --reload      # restarts when you sa
 
 Open http://localhost:3000 (in a Codespace, open port 3000) and type a name to log in. The name is the traveler's ID, so what the agent learns about you is kept under it.
 
+### See the finished app (optional)
+
+```bash
+./solve run --port 5010
+```
+
+Open http://localhost:5010 (in a Codespace, open port 5010).
+
 ### Seed some travelers (optional)
 
 ```bash
@@ -169,7 +183,7 @@ Where to write: look for `# TODO` in the files. The hint above each one says wha
 Stuck? You have two ways to get the solution:
 
 - **Copy it from the file.** Under each step there is a collapsed **Show solution** block with the finished code. Open it and copy what you need. It shows when you open the file as a notebook in JupyterLab, or in VS Code's notebook view.
-- **Run `./solve`.** Each step gives a `./solve` command. It saves your version of the files in `.solve-backup/`, then copies the finished code over them. A solution includes what the earlier steps in the same file did, so run them in order if you skip one.
+- **Run `./solve`.** Each step gives a `./solve` command. It saves your version of the files in `.solve-backup/`, then copies the finished code over them. A solution includes what the earlier steps in the same file did, so run them in order if you skip one. `./solve all` runs every step. On Windows, run it as `python solve 2a`.
 
 #### Exercise 1: see what no memory looks like
 

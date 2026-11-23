@@ -31,3 +31,7 @@ dev = [
 [tool.uv]
 # This is an app, not a package to install
 package = false
+
+[tool.vercel]
+# Where Vercel finds the app. Other tools ignore this
+entrypoint = "backend.main:app"
