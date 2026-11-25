@@ -33,7 +33,7 @@ Get the code first.
 - macOS and Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 
-Then:
+## Set environment variables
 
 ```bash
 uv sync
