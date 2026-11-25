@@ -1,7 +1,7 @@
 {
   "name": "Workshop: Reuse Knowledge for Agentic AI",
-  "build": { "dockerfile": "Dockerfile" },
-  "postCreateCommand": "uv sync --locked && uv run python -m ipykernel install --sys-prefix --name workshop-agent-memory-semantic-cache-trip-planning-langgraph --display-name 'Reuse Knowledge for Agentic AI' --env PYTHONPATH \"$PWD\"",
+  "image": "mcr.microsoft.com/devcontainers/python:3.15",
+  "postCreateCommand": "pip install uv && uv sync && uv run python -m ipykernel install --sys-prefix --name workshop-agent-memory-semantic-cache-trip-planning-langgraph --display-name 'Reuse Knowledge for Agentic AI' --env PYTHONPATH \"$PWD\"",
   "forwardPorts": [3000, 5010],
   "portsAttributes": {
     "3000": { "label": "Trip planner", "onAutoForward": "openBrowser" },
@@ -18,7 +18,6 @@
     "IRIS_AGENT_MEMORY_STORE_ID": { "description": "Your Redis Agent Memory store id" },
     "IRIS_AGENT_MEMORY_API_KEY": { "description": "Your Redis Agent Memory API key" },
     "OPENAI_API_KEY": { "description": "Your OpenAI API key" },
-    "GOOGLE_MAPS_API_KEY": { "description": "Your Google Maps Platform API key" },
-    "REDIS_URL": { "description": "Your Redis database URL" }
+    "GOOGLE_MAPS_API_KEY": { "description": "Your Google Maps Platform API key" }
   }
 }
