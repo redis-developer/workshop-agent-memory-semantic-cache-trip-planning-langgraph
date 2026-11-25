@@ -7,25 +7,25 @@ maintainers = [{ name = "Ashwin Hariharan" }]
 keywords = ["redis", "agent-memory", "ai-agents", "langgraph", "workshop"]
 requires-python = ">=3.15"
 dependencies = [
-    "fastapi>=0.115",
-    "uvicorn[standard]>=0.32",
-    "langchain-core>=1.0",
-    "langchain-openai>=1.0",
-    "langgraph>=1.0",
-    "langchain-mcp-adapters>=0.2",
-    "mcp>=1.9,<2",
+    "fastapi>=0.165.0",
+    "uvicorn[standard]>=0.54.0",
+    "langchain-core>=1.8.4",
+    "langchain-openai>=1.8.5",
+    "langgraph>=1.2.24",
+    "langchain-mcp-adapters>=0.3.2",
+    "mcp>=1.30.0,<2",
     "redis-iris>=1.2.0",
-    "python-dotenv>=1.0",
-    "httpx>=0.27",
-    "redisvl>=0.32.1",
+    "python-dotenv>=1.2.4",
+    "httpx>=0.28.1",
+    "redisvl>=0.33.0",
 ]
 
 [dependency-groups]
 # Lets you run the `# %%` cells of the exercise files in VS Code or Jupyter
 dev = [
-    "ipykernel>=6.29",
-    "jupyterlab",
-    "jupytext",
+    "ipykernel>=7.4.0",
+    "jupyterlab>=4.6.6",
+    "jupytext>=1.19.7",
 ]
 
 [tool.uv]
