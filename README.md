@@ -10,6 +10,7 @@ Learn how to provide your agent with working and long-term memory, and cut cost 
 - [Workshop instructions](#workshop-instructions)
 - [If something looks wrong](#if-something-looks-wrong)
 - [Resources](#resources)
+- [Learn more](#learn-more)
 - [Maintainers](#maintainers)
 
 ## Introduction
@@ -293,6 +294,12 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 - [Redis Agent Memory](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/)
 - [LangGraph](https://langchain-ai.github.io/langgraph/)
 - [Google Maps MCP server](https://developers.google.com/maps/ai/maps-experience-agent-tools/reference/mcp)
+
+## Learn more
+
+- [What is agent memory?](https://redis.io/blog/what-is-agent-memory)
+- [Which AI agent memory should you use?](https://redis.io/blog/which-ai-agent-memory-should-you-use/)
+- [When to cache, and when not to: semantic caching in agentic AI](https://dev.to/redis/semantic-caching-in-agentic-ai-determining-cache-eligibility-and-invalidation-5d7g)
 
 ## Maintainers
 
