@@ -54,3 +54,10 @@ You probably are on the wrong kernel. Choose **Reuse Knowledge for Agentic AI**,
 **The graph cell does not draw the graph**
 
 It uses the mermaid.ink website, so it needs an internet connection. Restart the kernel after changing the graph.
+
+
+**
+uv python upgrade 3.15
+uv run python --version
+uv sync
+**
