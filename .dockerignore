@@ -1,4 +1,15 @@
-# The image only needs the lock files. The code is mounted when the container starts.
-*
-!pyproject.toml
-!uv.lock
+# Left out of every image, so your keys and your own files never go into one
+.git
+.venv
+.env
+.env.*
+!.env.example
+.solve-backup
+.claude
+build
+__pycache__
+.ipynb_checkpoints
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.DS_Store
