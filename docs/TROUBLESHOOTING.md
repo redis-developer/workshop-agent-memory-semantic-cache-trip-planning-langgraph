@@ -8,6 +8,14 @@ Find your problem below. If it is not here, run `uv run python scripts/check.py`
 
 Upgrade uv (`brew upgrade uv` on a Mac, or see the [uv install docs](https://docs.astral.sh/uv/)). Each uv release knows only the Python versions that existed when it was made, so an older uv cannot fetch the Python this project needs.
 
+Then upgrade the Python that uv uses, check its version, and install the packages again:
+
+```bash
+uv python upgrade 3.15
+uv run python --version
+uv sync
+```
+
 **`Failed to spawn: uvicorn`, or `No module named 'backend'`**
 
 The virtual environment is stale, or it was built for another folder. Leave any active environment, then rebuild it from the project folder:
@@ -55,9 +63,3 @@ You probably are on the wrong kernel. Choose **Reuse Knowledge for Agentic AI**,
 
 It uses the mermaid.ink website, so it needs an internet connection. Restart the kernel after changing the graph.
 
-
-**
-uv python upgrade 3.15
-uv run python --version
-uv sync
-**

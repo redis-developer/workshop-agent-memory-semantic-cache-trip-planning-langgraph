@@ -1,0 +1,16 @@
+// Used by the VS Code Dev Containers extension ("Reopen in Container"), not by Codespaces.
+// It attaches VS Code to the `app` service in compose.yaml, the same container as `docker compose up`.
+{
+  "name": "Workshop: Reuse Knowledge for Agentic AI (Docker)",
+  "dockerComposeFile": "../../compose.yaml",
+  "service": "app",
+  "runServices": ["app"],
+  "overrideCommand": false,
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-toolsai.jupyter"],
+      "settings": { "python.defaultInterpreterPath": "/opt/venv/bin/python" }
+    }
+  }
+}

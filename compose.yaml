@@ -1,0 +1,29 @@
+# Runs the workshop in Docker on your own computer: `docker compose up --build`. It builds docker/Dockerfile.
+# Your files stay in this folder and are mounted into the containers, so what you save in your editor is what runs.
+x-workshop: &workshop
+  image: workshop-agent-memory-semantic-cache-trip-planning-langgraph
+  volumes:
+    - .:/workspace
+  environment:
+    # Listen on every address, or your browser could not reach the app from outside the container
+    UVICORN_HOST: 0.0.0.0
+    # Saving a file on macOS and Windows does not always tell the container, so look for changes
+    WATCHFILES_FORCE_POLLING: "true"
+
+services:
+  app:
+    <<: *workshop
+    # Only this service builds the image. JupyterLab uses the same one.
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: uvicorn backend.main:app --port 3000 --reload
+    ports:
+      - "127.0.0.1:3000:3000"  # Trip planner
+      - "127.0.0.1:5010:5010"  # Finished app, from ./solve run
+
+  jupyter:
+    <<: *workshop
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --IdentityProvider.token= --ServerApp.password=
+    ports:
+      - "127.0.0.1:8888:8888"  # JupyterLab, only reachable from this computer

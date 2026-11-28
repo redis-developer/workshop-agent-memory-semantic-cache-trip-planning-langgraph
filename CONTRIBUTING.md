@@ -1,6 +1,52 @@
 # Contributing
 
-How to change this project. Participants only need the [README](README.md). Read the aims and the design principles in [AGENTS.md](./AGENTS.md) first, since they decide how much to build and what to leave out.
+How to change this project. Participants only need the [README](README.md). Start with the aims and the design principles below: they decide how much to build and what to leave out, and the rules after them apply to every change.
+
+## About the project
+
+This repository contains the workshop code for a trip-planning agent that remembers travelers across conversations. It is a teaching project, for developers who are new to Redis Agent Memory, LangGraph or AI agents. Participants start from an agent with no memory and add it exercise by exercise.
+
+### What this project aims to demonstrate
+
+The goal is to show, in a working and readable example, how an agent reuses knowledge at three levels, and why it is done that way:
+
+- **Earlier in the same conversation** (working memory): what was said so far.
+- **About the traveler, from past conversations** (long-term memory): what it learned and kept.
+- **Answers it already gave to similar questions** (the semantic cache): what it can reuse without asking the model again.
+
+It aims to show:
+
+- **Working memory:** what the conversation (session) holds, when it is read and written, and how it reaches the model.
+- **Long-term memory:** how it differs from working memory, what it holds, and the two ways it is filled: the model saving a fact with a tool, and the service extracting facts from sessions by itself.
+- **Retrieving memory:** the model deciding when to search (a tool), against the code always searching first (a step in the graph), and what each costs and gives.
+- **Agent workflows:** tool calling, and how a workflow is put together (state, nodes, routing, streaming).
+- **Semantic caching:** reusing an answer to a question that was already asked, what is safe to cache and what is not (anything personal or live), and the cost and latency it saves.
+- **Integration:** how a framework (LangGraph), a model provider (OpenAI), an external tool server (Google Maps over MCP) and a data store (Redis Agent Memory) are wired into one app.
+
+It does not aim to demonstrate complete trip-planning logic, or production-ready authentication and authorisation. Those stay simple on purpose.
+
+## Motivations
+
+This workshop is written for a room of developers from outside Redis, such as [WeAreDevelopers](https://www.wearedevelopers.com/) or [Agent Con](https://globalai.community/e/2yasbdfb), general developer conferences that Redis does not run. Not everyone there uses a Redis enterprise service, and what they learn should still be useful to them afterwards. So the workshop uses both:
+
+- **Redis Agent Memory,** the enterprise service, holds what the agent remembers.
+- **Open source RedisVL** is used for other parts, so a reader can use the same idea with Redis they run themselves.
+
+Using both shows what each one gives, and it keeps the workshop from being only a product demo or only a library tutorial.
+
+What decides the balance is who is in the room. At a Redis event, if the audience is mostly general developers, keep the balance as it is. If it is mostly Redis customers, you can lean more on the enterprise features - create a fork or a branch of this repostory and make changes there. Keep the audience in mind before you swap one for the other.
+
+## Design principles
+
+The more complicated the codebase gets, the harder it is to follow, and a workshop that can't be followed teaches nothing. Balance three things:
+
+- **Simplicity:** a reader only needs to know what the exercise needs. Use the fewest tools, libraries and concepts, and do not pick one that readers would have to learn first. For example, the front end is plain HTML, CSS and JavaScript, not React, because React would assume the reader knows it.
+- **Longevity:** it is easy to test, and to move to another provider or framework.
+- **Solid foundations:** the way the code is structured and organised is a pattern that would hold up if it were applied in production. This is about the architecture and the patterns, not about making the app's own features production-grade. The features stay as simple as the exercise needs.
+
+Choose a structure that would carry over to production when it is cheap and keeps the code easy to read, such as separating layers and not hard-coding settings. Leave out anything that only matters for a production version of the features themselves, or that would bury the exercise under extra code, extra layers or extra files.
+
+When something is left out on purpose, say so in a comment or the README, so readers know it is a choice. A new abstraction, helper or file has to earn its place: if only one thing uses it, it is probably too much.
 
 ## Before you start developing
 
@@ -49,19 +95,24 @@ Code outside `ai/` imports from `backend.modules.ai`, whose `__init__.py` lists 
 
 ### The exercise files
 
-The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. The files in the repository are the **starter**: each step a participant writes is a stub with a `# TODO` and a hint, written so the app still runs without memory. A TODO of several lines is a block: `# TODO start (Exercise 2B): ...` at the top, the hint, the placeholder `return` or `raise`, and `# TODO end (Exercise 2B)` at the bottom. A TODO of one line has no markers. A stub reads more easily with some air around it: we usually leave a blank line before a `# TODO`, between its hint and the placeholder code, before `# TODO end`, and after it. Under each step is a collapsed "Show solution" block (`<details>`) with the finished code. Keep every existing comment when you turn code into a stub.
+The exercise files are notebook-style scripts (Jupytext percent format): the `# %%` lines split a file into cells, with the explanation as markdown cells. The files in the repository are the **starter**: each step a participant writes is a stub with a `# TODO` and a hint, written so the app still runs without memory.
 
-The finished files are in `solutions/<step>/`, at the same path as in the repository, and `./solve` copies them over. Each one has its step solved and every earlier step in the same file, and its headings say "(solved)". When you change exercise code, update the stub, the "Show solution" block and the file in `solutions/` together, and keep the README exercise and the diagram saying the same thing.
+- A TODO of several lines is a block: `# TODO start (Exercise 2B): ...` at the top, the hint, the placeholder `return` or `raise`, and `# TODO end (Exercise 2B)` at the bottom.
+- A TODO of one line is a single comment with no `start` and `end` markers, for example `# TODO (Exercise 5): search the traveler's memories.`
+- A stub reads more easily with some air around it: we usually leave a blank line before a `# TODO`, between its hint and the placeholder code, before `# TODO end`, and after it.
+- Under each step is a collapsed "Show solution" block (`<details>`) with the finished code. Keep every existing comment when you turn code into a stub.
+
+The finished files are in `docs/solutions/<step>/`, at the same path as in the repository, and `./solve` copies them over. Each one has its step solved and every earlier step in the same file, and its headings say "(solved)". When you change exercise code, update the stub, the "Show solution" block and the file in `docs/solutions/` together, and keep the README exercise and the diagram saying the same thing.
 
 ### The finished app
 
 `./solve run` builds a copy of the project with every solution in `build/solved/` and starts it from there with `uv run uvicorn backend.main:app --app-dir build/solved`. Your own files are not changed. `--port` picks the port, and 5010 is the default.
 
-`./solve all --out <folder>` only builds the copy, for example to deploy it. The copy leaves out `.env` (set the keys as environment variables where you host it), `.git`, `.venv`, `solutions/`, `build/` and caches, and it has an `app.py` at the top for hosts that look for the app there. It only builds over a folder that `./solve` made (it has a `.solve-build` file), and it refuses the project folder and the folders around it.
+`./solve all --out <folder>` only builds the copy, for example to deploy it. The copy leaves out `.env` (set the keys as environment variables where you host it), `.git`, `.venv`, `docs/`, `build/` and caches, and it has an `app.py` at the top for hosts that look for the app there. It only builds over a folder that `./solve` made (it has a `.solve-build` file), and it refuses the project folder and the folders around it.
 
 `./solve all` without `--out` applies every solution to your own files. A later step has everything an earlier step did in the same file, so each file is written once, from the last step, and your own versions are saved in `.solve-backup/` first.
 
-A new step in `solutions/` is picked up by all three.
+A new step in `docs/solutions/` is picked up by all three.
 
 ## The architecture diagram
 

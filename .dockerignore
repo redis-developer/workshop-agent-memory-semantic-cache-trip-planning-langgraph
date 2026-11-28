@@ -1,0 +1,4 @@
+# The image only needs the lock files. The code is mounted when the container starts.
+*
+!pyproject.toml
+!uv.lock

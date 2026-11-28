@@ -19,25 +19,34 @@ You will give a trip-planning agent two kinds of memory: what was said in this c
 
 - The agent runs on [LangGraph](https://langchain-ai.github.io/langgraph/), [FastAPI](https://fastapi.tiangolo.com/) and OpenAI.
 - It finds places and the weather with [Google Maps](https://developers.google.com/maps/ai/maps-experience-agent-tools/reference/mcp).
-- Everything it remembers is kept in [Redis Agent Memory](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/).
-- The answers it reuses are kept in a [RedisVL](https://redis.io/docs/latest/develop/ai/redisvl/) semantic cache.
+- Everything it remembers is kept in [Redis Agent Memory](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/?utm_source=devrel&utm_medium=workshop).
+- The answers it reuses are kept in a [RedisVL](https://redis.io/docs/latest/develop/ai/redisvl/?utm_source=devrel&utm_medium=workshop) semantic cache.
+
+![The trip planner: place cards on the left, the chat and the steps the agent took on the right](docs/images/trip-planner.png)
 
 ## Set up
 
-Get the code first.
+Pick **one** of these three ways to run the workshop. Each step below shows the command for each of them where they differ.
 
-**In GitHub Codespaces** (nothing to install): open the repository in a Codespace.
+**Option 1: Docker** (nothing to install except [Docker](https://docs.docker.com/get-started/get-docker/)): get the code, then follow the steps below. Where a step has a `uv` command, the Docker command is next to it.
 
-**On your machine** ([uv](https://docs.astral.sh/uv/) installed; it fetches Python 3.15 for you). To install uv, use one of these (see the [installation guide](https://docs.astral.sh/uv/getting-started/installation/)):
+**Option 2: GitHub Codespaces** (nothing to install): open the repository in a Codespace.
+
+**Option 3: Your machine** (needs [uv](https://docs.astral.sh/uv/); it fetches Python 3.15 for you): get the code, then install uv with one of these (see the [installation guide](https://docs.astral.sh/uv/getting-started/installation/)):
 
 - macOS with Homebrew: `brew install uv`
 - macOS and Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Windows (PowerShell): `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 
-## Set environment variables
+Then install the packages once:
 
 ```bash
 uv sync
+```
+
+## Set environment variables
+
+```bash
 cp .env.example .env
 ```
 
@@ -53,9 +62,9 @@ The agent finds places and the weather through Google's own [Google Maps MCP ser
 
 ### 3. Redis Agent Memory
 
-These steps follow the [quickstart](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/quickstart/).
+These steps follow the [quickstart](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/quickstart/?utm_source=devrel&utm_medium=workshop).
 
-**A database to attach it to.** The service needs an active Redis Cloud database, with a public endpoint, Redis Search and the default user enabled. If you don't have one, [create a database](https://redis.io/docs/latest/operate/rc/databases/create-database/). Once it exists, copy its public endpoint and the password of the default user from the [Redis Cloud console](https://cloud.redis.io/), and put them together as `redis://default:<password>@<endpoint>`. This is your `REDIS_URL`, which the semantic cache uses later.
+**A database to attach it to.** The service needs an active Redis Cloud database, with a public endpoint, Redis Search and the default user enabled. If you don't have one, [create a database](https://redis.io/docs/latest/operate/rc/databases/create-database/?utm_source=devrel&utm_medium=workshop). Once it exists, copy its public endpoint and the password of the default user from the [Redis Cloud console](https://cloud.redis.io/), and put them together as `redis://default:<password>@<endpoint>`. This is your `REDIS_URL`, which the semantic cache uses later.
 
 **Create the service.** In the [Redis Cloud console](https://cloud.redis.io/), choose **Agent Memory** under **Iris**, then **Create Agent Memory service** and **Customize settings**. Enter a name, pick the database and its `default` user, and under **Memory configuration** enter:
 
@@ -103,11 +112,25 @@ This is advisory: it steers what the service extracts, and does not guarantee it
 uv run python scripts/check.py
 ```
 
+With Docker (the first time, this builds the image, which takes a few minutes):
+
+```bash
+docker compose run --rm app python scripts/check.py
+```
+
 It tests your memory service, OpenAI and Google Maps, and says what is missing or wrong.
 
 ## Run the application
 
-### Start the app
+### Start the app (with Docker)
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:3000 and type a name to log in. The name is the traveler's ID, so what the agent learns about you is kept under it.
+
+### Start the app (with uv, on your machine or in a Codespace)
 
 ```bash
 uv run uvicorn backend.main:app --port 3000 --reload      # restarts when you save a file
@@ -121,6 +144,12 @@ Open http://localhost:3000 (in a Codespace, open port 3000) and type a name to l
 ./solve run --port 5010
 ```
 
+With Docker (the app must be running):
+
+```bash
+docker compose exec app ./solve run --port 5010
+```
+
 Open http://localhost:5010 (in a Codespace, open port 5010).
 
 ### Seed some travelers (optional)
@@ -129,12 +158,24 @@ Open http://localhost:5010 (in a Codespace, open port 5010).
 uv run python scripts/seed_agent_memory.py
 ```
 
+With Docker:
+
+```bash
+docker compose run --rm app python scripts/seed_agent_memory.py
+```
+
 This gives three travelers (ashwin, bhavana and kyle) some memories already, so there is something to find in exercises 4 and 5. Log in with one of those names to use them. Add `--reset` to delete their memories and start them over.
 
 ### Seed the semantic cache (for exercise 6)
 
 ```bash
 uv run python scripts/seed_semantic_cache.py
+```
+
+With Docker:
+
+```bash
+docker compose run --rm app python scripts/seed_semantic_cache.py
 ```
 
 This fills the cache with answers to 15 questions about popular places (Goa, Bali, Paris, New York and more), each with its place cards, so there is something to find in exercise 6. It uses the database from your `REDIS_URL`. It is safe to run again: it empties the cache first, including any answer the cache kept by itself in exercise 7, then adds these answers.
@@ -149,7 +190,7 @@ To see how the pieces fit together, and which ones each exercise adds, open the 
 
 **In your own editor.** Open the files from the table, edit them and save. The running app only sees what you save, and `--reload` restarts it when you do.
 
-**Or run them as notebooks in JupyterLab (optional).** The exercise files can be run cell by cell, so you can try a step on its own before the app uses it. Register the kernel once (a Codespace already has it), then start JupyterLab:
+**Or run them as notebooks in JupyterLab (optional).** The exercise files can be run cell by cell, so you can try a step on its own before the app uses it. Register the kernel once (a Codespace and Docker already have it; with Docker, JupyterLab is already running at http://localhost:8888, so skip these two commands), then start JupyterLab:
 
 ```bash
 uv run python -m ipykernel install --sys-prefix --name workshop-agent-memory-semantic-cache-trip-planning-langgraph --display-name "Reuse Knowledge for Agentic AI" --env PYTHONPATH "$(pwd)"
@@ -184,7 +225,7 @@ Where to write: look for `# TODO` in the files.
 Stuck? You have two ways to get the solution:
 
 - **Copy it from the file.** Under each step there is a collapsed **Show solution** block with the finished code. Open it and copy what you need. It shows when you open the file as a notebook in JupyterLab, or in VS Code's notebook view.
-- **Run `./solve`.** Each step gives a `./solve` command. It saves your version of the files in `.solve-backup/`, then copies the finished code over them. A solution includes what the earlier steps in the same file did, so run them in order if you skip one. `./solve all` runs every step. On Windows, run it as `python solve 2a`.
+- **Run `./solve`.** Each step gives a `./solve` command. It saves your version of the files in `.solve-backup/`, then copies the finished code over them. A solution includes what the earlier steps in the same file did, so run them in order if you skip one. `./solve all` runs every step. On Windows, run it as `python solve 2a`. With Docker, run it as `docker compose run --rm app ./solve 2a`.
 
 #### Exercise 1: see what no memory looks like
 
@@ -198,12 +239,21 @@ Make the agent remember the conversation so far.
 
 1. **Step A.** Add each message to the session in Redis Agent Memory, and read the session back.
 
-   Skip ahead with the solution: `./solve 2a`
+   Skip ahead with the solution:
+
+   - `./solve 2a`
+   - With Docker: `docker compose run --rm app ./solve 2a`
 2. **Step B.** Before each model call, put the conversation so far into the prompt. Ask "which city did I just ask about?" to try it. Then change how much of it the model gets, and watch what it forgets.
 
-   Skip ahead with the solution: `./solve 2b`
+   Skip ahead with the solution:
 
-Full solution: `./solve 2`
+   - `./solve 2b`
+   - With Docker: `docker compose run --rm app ./solve 2b`
+
+Full solution:
+
+- `./solve 2`
+- With Docker: `docker compose run --rm app ./solve 2`
 
 ---
 
@@ -213,12 +263,21 @@ Make a lasting fact outlive the conversation.
 
 1. **Step A.** Create a long-term memory with its text, its owner (the traveler), a type (semantic for a preference, episodic for something that happened) and topics.
 
-   Skip ahead with the solution: `./solve 3a`
+   Skip ahead with the solution:
+
+   - `./solve 3a`
+   - With Docker: `docker compose run --rm app ./solve 3a`
 2. **Step B.** Write the `save_memory` tool and give it to the agent, by adding it to the `memory_tools` list at the bottom of its file. Say "I'm vegetarian", then open the **Memory** tab.
 
-   Skip ahead with the solution: `./solve 3b`
+   Skip ahead with the solution:
 
-Full solution: `./solve 3`
+   - `./solve 3b`
+   - With Docker: `docker compose run --rm app ./solve 3b`
+
+Full solution:
+
+- `./solve 3`
+- With Docker: `docker compose run --rm app ./solve 3`
 
 The service also reads each conversation and extracts memories on its own, about 5 minutes after the turn. `save_memory` writes straight away, and the model chooses what to keep.
 
@@ -230,12 +289,21 @@ Let the model look up what it saved.
 
 1. **Step A.** Search a traveler's long-term memories by meaning, only their own, with an optional memory type.
 
-   Skip ahead with the solution: `./solve 4a`
+   Skip ahead with the solution:
+
+   - `./solve 4a`
+   - With Docker: `docker compose run --rm app ./solve 4a`
 2. **Step B.** Write the `search_memories` tool and add it to the `memory_tools` list. Start a new session and ask for something in different words, such as "any food restrictions I should remember?". The search is by meaning, not by keyword.
 
-   Skip ahead with the solution: `./solve 4b`
+   Skip ahead with the solution:
 
-Full solution: `./solve 4`
+   - `./solve 4b`
+   - With Docker: `docker compose run --rm app ./solve 4b`
+
+Full solution:
+
+- `./solve 4`
+- With Docker: `docker compose run --rm app ./solve 4`
 
 ---
 
@@ -246,26 +314,40 @@ Instead of waiting for the model to ask, look up memories before the agent runs,
 - Write `retrieve_memories` in `nodes.py`, which searches for what the traveler just said.
 - Log in as `ashwin`, say "hey", and see what the agent already knows. Then try logging in as your own user.
 
-Full solution: `./solve 5`
+Full solution:
+
+- `./solve 5`
+- With Docker: `docker compose run --rm app ./solve 5`
 
 ---
 
 #### Exercise 6: semantic caching, check the cache
 
-A question that was already answered does not need the agent again. Check the cache first, and if a similar question is in it, return that answer straight away. The cache is RedisVL's [semantic cache](https://redis.io/docs/latest/develop/ai/redisvl/user_guide/how_to_guides/llmcache/), in the database from your `REDIS_URL`. It compares the meaning of questions, not their words.
+A question that was already answered does not need the agent again. Check the cache first, and if a similar question is in it, return that answer straight away. The cache is RedisVL's [semantic cache](https://redis.io/docs/latest/develop/ai/redisvl/user_guide/how_to_guides/llmcache/?utm_source=devrel&utm_medium=workshop), in the database from your `REDIS_URL`. It compares the meaning of questions, not their words.
 
 1. **Seed the cache.** Fill the cache with answers to 15 questions about popular places (Goa, Bali, Paris, New York and more), the way the traveler memories were seeded. Each answer comes with its place cards:
 
    ```bash
    uv run python scripts/seed_semantic_cache.py
    ```
+
+   With Docker: `docker compose run --rm app python scripts/seed_semantic_cache.py`
 2. **Step A.** Look a question up in the cache, so that a question with a similar meaning finds the stored answer and its cards.
 
-   Skip ahead with the solution: `./solve 6a`
-3. **Step B.** Write `check_cache` in `nodes.py`. On a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?".
-   Skip ahead with the solution: `./solve 6b`
+   Skip ahead with the solution:
 
-Full solution: `./solve 6`
+   - `./solve 6a`
+   - With Docker: `docker compose run --rm app ./solve 6a`
+3. **Step B.** Write `check_cache` in `nodes.py`. On a hit the graph ends there, and on a miss it goes on to the agent. Start a new session and ask "What should I see in Paris?".
+   Skip ahead with the solution:
+
+   - `./solve 6b`
+   - With Docker: `docker compose run --rm app ./solve 6b`
+
+Full solution:
+
+- `./solve 6`
+- With Docker: `docker compose run --rm app ./solve 6`
 
 ---
 
@@ -275,30 +357,39 @@ Let the cache fill itself. After the agent answers, keep the question and its an
 
 1. **Step A.** Store a question together with its answer in the cache.
 
-   Skip ahead with the solution: `./solve 7a`
+   Skip ahead with the solution:
+
+   - `./solve 7a`
+   - With Docker: `docker compose run --rm app ./solve 7a`
 2. **Step B.** Write `store_in_cache` in `nodes.py`. Ask something you haven't asked before, then ask it again: the second answer comes from the cache.
 
    An answer with the weather, one written with a traveler's memories, one without places, or follow-up questions such as "and the second one?" are left out.
 
-   Skip ahead with the solution: `./solve 7b`
+   Skip ahead with the solution:
 
-Full solution: `./solve 7`
+   - `./solve 7b`
+   - With Docker: `docker compose run --rm app ./solve 7b`
+
+Full solution:
+
+- `./solve 7`
+- With Docker: `docker compose run --rm app ./solve 7`
 
 ## If something looks wrong
 
-See [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Resources
 
-- [Try Redis free](https://redis.io/try-free/)
-- [Redis Agent Memory](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/)
+- [Try Redis free](https://redis.io/try-free/?utm_source=devrel&utm_medium=workshop)
+- [Redis Agent Memory](https://redis.io/docs/latest/develop/ai/context-engine/agent-memory/?utm_source=devrel&utm_medium=workshop)
 - [LangGraph](https://langchain-ai.github.io/langgraph/)
 - [Google Maps MCP server](https://developers.google.com/maps/ai/maps-experience-agent-tools/reference/mcp)
 
 ## Learn more
 
-- [What is agent memory?](https://redis.io/blog/what-is-agent-memory)
-- [Which AI agent memory should you use?](https://redis.io/blog/which-ai-agent-memory-should-you-use/)
+- [What is agent memory?](https://redis.io/blog/what-is-agent-memory?utm_source=devrel&utm_medium=workshop)
+- [Which AI agent memory should you use?](https://redis.io/blog/which-ai-agent-memory-should-you-use/?utm_source=devrel&utm_medium=workshop)
 - [When to cache, and when not to: semantic caching in agentic AI](https://dev.to/redis/semantic-caching-in-agentic-ai-determining-cache-eligibility-and-invalidation-5d7g)
 
 ## Maintainers

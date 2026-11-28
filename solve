@@ -29,7 +29,7 @@ from pathlib import Path
 # ---------- Settings ----------
 
 ROOT = Path(__file__).resolve().parent
-SOLUTIONS = ROOT / "solutions"
+SOLUTIONS = ROOT / "docs" / "solutions"
 DEFAULT_OUT = ROOT / "build" / "solved"
 
 # A folder with this file in it was made by this script, so it is safe to build over it again
@@ -42,7 +42,7 @@ TOP_LEVEL_SKIPPED = {
     ".claude",  # tooling
     ".solve-backup",  # your own backups
     "build",  # where the copy itself goes
-    "solutions",  # not needed to run the app
+    "docs",  # the solutions and the guides: not needed to run the app
     "solve",  # this script
 }
 
@@ -68,7 +68,7 @@ def steps_for(name):
 
 def solution_files(steps):
     """
-    Each file of these solutions: its step, where it is in solutions/, and the path it goes to in the project.
+    Each file of these solutions: its step, where it is in docs/solutions/, and the path it goes to in the project.
     A later step has everything an earlier step did in the same file, so a file is only given once, from the last step.
     """
     latest = {}
