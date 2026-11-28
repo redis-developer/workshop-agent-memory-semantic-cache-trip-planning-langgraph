@@ -1,5 +1,6 @@
 """
 Gives the three travelers (ashwin, bhavana, kyle) some long-term memories, so there is something to find.
+Each name is the name to log in with: the traveler's ID is the name typed on the login screen.
 Safe to run again: each memory has a fixed id, and the service skips ids that already exist, so a second run
 does not add copies. It never changes a memory that is already there.
 
@@ -20,6 +21,7 @@ load_dotenv()
 
 travelers = {
     "ashwin": [
+        {"text": "The traveler's name is Ashwin.", "topics": ["profile"], "memory_type": "semantic"},
         {"text": "Enjoys visiting places of interest: landmarks, museums and historic sites.", "topics": ["landmarks", "culture"], "memory_type": "semantic"},
         {"text": "Prefers cold weather and cooler destinations.", "topics": ["weather"], "memory_type": "semantic"},
         {"text": "Enjoys cycling and likes destinations where it is easy to ride.", "topics": ["cycling", "outdoors"], "memory_type": "semantic"},
@@ -29,6 +31,7 @@ travelers = {
         {"text": "Visited New York City in September 2026.", "topics": ["trip"], "memory_type": "episodic"},
     ],
     "bhavana": [
+        {"text": "The traveler's name is Bhavana.", "topics": ["profile"], "memory_type": "semantic"},
         {"text": "Travels with family: partner and two young kids (ages 6 and 9). Prefers famous landmarks, outdoor parks, and family-friendly restaurants everyone can enjoy.", "topics": ["family", "outdoors"], "memory_type": "semantic"},
         {"text": "Comfortable with mid-range family budgets: hotels with pools, sit-down restaurants, taxis over public transit when there are kids in tow.", "topics": ["budget"], "memory_type": "semantic"},
         {"text": "Visited Delhi in December 2025.", "topics": ["trip"], "memory_type": "episodic"},
@@ -36,6 +39,7 @@ travelers = {
         {"text": "Visited Mumbai in October 2026.", "topics": ["trip"], "memory_type": "episodic"},
     ],
     "kyle": [
+        {"text": "The traveler's name is Kyle.", "topics": ["profile"], "memory_type": "semantic"},
         {"text": "Travels as a couple. Loves rooftop bars, live jazz, contemporary art, and upscale food. Prefers urban destinations.", "topics": ["nightlife", "culture"], "memory_type": "semantic"},
         {"text": "Comfortable spending high on luxury experiences: fine dining, premium cocktails, boutique hotels.", "topics": ["budget"], "memory_type": "semantic"},
         {"text": "Spent a long weekend in New York as a couple: rooftop bars, a late jazz set in Greenwich Village and a tasting menu in Midtown.", "topics": ["trip", "nightlife"], "memory_type": "episodic"},
@@ -88,6 +92,7 @@ async def main() -> int:
     failed = [error for error in errors if error.status != 409]
 
     print(f"Created {len(result.created)} memories for {', '.join(travelers)}. {len(already_there)} were already there.")
+    print(f"Log in with one of these names to use them: {', '.join(travelers)}.")
     for error in failed:
         print(f"✗ {error.memory_id}: {error.detail or error.title}")
     return 1 if failed else 0
